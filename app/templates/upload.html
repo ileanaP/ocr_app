@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block content %}
+<h1 style="padding-bottom:50px;">Upload file</h1>
+<form action="" method="post" class="form" role="form" enctype='multipart/form-data'>
+<p>
+    {% for error in form.file.errors %}
+    <span style="color:red;">{{ error }}</span>
+    {% endfor %}
+</p>
+{{ form.hidden_tag() }}
+<fieldset>
+{{ wtf.form_field(form.file) }}
+{{ wtf.form_field(form.scan, checked=True) }}
+{{ wtf.form_field(form.ccl, checked=True) }}
+{{ wtf.form_field(form.submit, class="btn btn-primary") }}
+</fieldset>
+</form>
+
+{% endblock %}
