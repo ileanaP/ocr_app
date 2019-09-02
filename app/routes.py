@@ -47,7 +47,8 @@ def upload():
             else:
                 ext = getAllowedExt(file.filename)
                 if file and ext != '':
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'reciept.' + ext))
+                    fileWay = os.path.join(app.config['UPLOAD_FOLDER'], 'reciept.' + ext)
+                    file.save(fileWay)
                     flash('File was successfully uploaded')
                 else:
                     flash('This file extention is not allowed. Please try another one')
