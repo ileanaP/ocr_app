@@ -6,6 +6,9 @@ html, body {
 
 body{
 	background-image: url("../img/background.jpg");
+	background-repeat: repeat-y;
+	background-color: #1E69B3;
+	background-size: 300px;
 	width:100%;
 }
 

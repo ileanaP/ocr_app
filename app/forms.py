@@ -5,9 +5,13 @@ Created on Sat Jun  1 10:19:43 2019
 @author: ILENUCA
 """
 
+from flask import flash
+import os
+from app import app
 from flask_wtf import FlaskForm
-from wtforms import StringField, BooleanField, SubmitField, FileField, PasswordField
+from wtforms import BooleanField, SubmitField, FileField
 from wtforms.validators import DataRequired
+from werkzeug import secure_filename
 
 class UploadForm(FlaskForm):
     file = FileField("File", validators=[DataRequired()])
@@ -15,4 +19,29 @@ class UploadForm(FlaskForm):
     ccl = BooleanField('Apply CCL', default="checked")
     submit = SubmitField('Upload')
     
+    def isFileExtentionAllowed(self, filename):
+        ext = filename.split('.')[1].lower()
+        if ext in app.config['ALLOWED_EXTENSIONS']:
+            return 1
+        
+        return 0
+    
     #include file field in form
+    def tryUploadFileToServer(self):
+        if self.validate_on_submit():
+            file = self.file.data
+            if not file:
+                flash('No file was uploaded. Please try again')
+                return
+            
+            self.uploadFile(file)
+                
+    def uploadFile(self, file):
+        filename = secure_filename(file.filename)
+            
+        if self.isFileExtentionAllowed(filename):
+            filePath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filePath)
+            flash('File was successfully uploaded')
+        else:
+            flash('This file extention is not allowed. Please try another one')
