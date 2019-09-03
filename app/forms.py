@@ -18,6 +18,7 @@ class UploadForm(FlaskForm):
     scan = BooleanField('Scan', default="checked")
     ccl = BooleanField('Apply CCL', default="checked")
     submit = SubmitField('Upload')
+    fileSize = 0
     
     def isFileExtentionAllowed(self, filename):
         ext = filename.split('.')[1].lower()
@@ -26,6 +27,11 @@ class UploadForm(FlaskForm):
         
         return 0
     
+    def setFileSize(self, file):
+        file.seek(0, os.SEEK_END)
+        self.fileSize = file.tell()
+        file.seek(0)
+    
     #include file field in form
     def tryUploadFileToServer(self):
         if self.validate_on_submit():
@@ -33,9 +39,15 @@ class UploadForm(FlaskForm):
             if not file:
                 flash('No file was uploaded. Please try again')
                 return
+
+            self.setFileSize(file)
             
-            self.uploadFile(file)
+            if self.fileSize > 3145728:
+                flash("The file exceeds 3MB. Please try uploading another one")
+                return
                 
+            self.uploadFile(file)
+    
     def uploadFile(self, file):
         filename = secure_filename(file.filename)
             
