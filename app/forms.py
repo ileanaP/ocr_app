@@ -12,6 +12,7 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField, FileField
 from wtforms.validators import DataRequired
 from werkzeug import secure_filename
+from werkzeug.exceptions import abort, RequestEntityTooLarge
 
 class UploadForm(FlaskForm):
     file = FileField("File", validators=[DataRequired()])
@@ -35,11 +36,15 @@ class UploadForm(FlaskForm):
     #include file field in form
     def tryUploadFileToServer(self):
         if self.validate_on_submit():
-            file = self.file.data
-            if not file:
-                flash('No file was uploaded. Please try again')
-                return
-
+            try:
+                file = self.file.data
+            
+                if not file:
+                    flash('No file was uploaded. Please try again')
+                    return
+            except RequestEntityTooLarge: #does not work on dev env
+                abort(413, 'File exceeds server capabilities')
+        
             self.setFileSize(file)
             
             if self.fileSize > 3145728:

@@ -42,6 +42,11 @@ body{
 	height:4em;
 }
 
+.app-logo a{
+    color: white;
+    text-decoration: none;
+}
+
 .logo-text{
 	float:left;
 	font-size:2em;
