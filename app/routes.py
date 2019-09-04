@@ -7,6 +7,7 @@ Created on Sun May 26 12:38:42 2019
 
 from flask import render_template, flash, request
 from flask.helpers import make_response
+from app.services.UploadFileService import UploadFileService
 from app import app
 from app.forms import UploadForm
 
@@ -21,10 +22,14 @@ def example():
 
 @app.route('/upload', methods=['GET',  'POST'])
 def upload():
-    
     form = UploadForm()
-    if request.method == 'POST':
-        form.tryUploadFileToServer()
+    if request.method == 'POST': #this url will be POSTed only from AJAX
+        if form.validate_on_submit():
+            uploader = UploadFileService()
+            returncode = uploader.upload(form.file.data)
+        else:
+            returncode = '1005' #there was an error in submitting the form
+        flash(returncode)
     return render_template('upload.html', title="Upload Form", form=form)
 
 """ ERROR HANDLING  """
@@ -32,6 +37,6 @@ def upload():
 def page_not_found(e):
     return make_response(render_template('404.html', title="404 Page Not Found"), 404)
 
-@app.errorhandler(413)
+@app.errorhandler(413) #does not work on dev env
 def request_entity_too_large(e):
     return make_response(render_template('413.html', title="413 File Too Large"), 413)

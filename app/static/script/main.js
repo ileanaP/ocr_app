@@ -15,7 +15,6 @@ $(document).ready(function(){
 		var fileName = $('.js-file').val().split("\\")[2];
 		var ext = fileName.split(".")[1];
 		
-		console.log('ext: ' + ext);
 		if(!$.inArray(ext, mimeTypes)) // de ce merge asa? ^_^'
 		{
 			$('.js-file-label').html(fileName);		
