@@ -14,7 +14,8 @@ from app.forms import UploadForm
 @app.route('/')
 @app.route('/index')
 def index():
-    return render_template('index.html', title='Home')
+    form = UploadForm()
+    return render_template('index.html', title='Home', form=form)
 
 @app.route('/example')
 def example():
@@ -23,14 +24,15 @@ def example():
 @app.route('/upload', methods=['GET',  'POST'])
 def upload():
     form = UploadForm()
+    returncode = 0
     if request.method == 'POST': #this url will be POSTed only from AJAX
         if form.validate_on_submit():
             uploader = UploadFileService()
             returncode = uploader.upload(form.file.data)
         else:
             returncode = '1005' #there was an error in submitting the form
-        flash(returncode)
-    return render_template('upload.html', title="Upload Form", form=form)
+    return returncode
+#    return render_template('upload.html', title="Upload Form", form=form)
 
 """ ERROR HANDLING  """
 @app.errorhandler(404)

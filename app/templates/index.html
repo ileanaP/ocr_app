@@ -1,19 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Upload Image</h2>
-<br/>
-<div class="input-group">
-  <div class="input-group-prepend">
-    <span class="input-group-text" id="inputGroupFileAddon01">Upload</span>
-  </div>
-  <div class="custom-file">
-    <input type="file" class="custom-file-input js-file" id="inputGroupFile01"
-      aria-describedby="inputGroupFileAddon01">
-    <label class="custom-file-label js-file-label" for="inputGroupFile01">Choose file</label>
-  </div>
+<div id="pagecontent">
+{% include "upload.html" %}
 </div>
-<br/>
-<p>Upload Image of a reciept, a clean shot with contrasting background</p>
-<hr class="d-sm-none">
 {% endblock %}
