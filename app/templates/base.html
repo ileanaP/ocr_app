@@ -38,18 +38,7 @@
 			<div class="content">
 				<div class="col-sm-10 offset-sm-1"></div>
 				<div class="row">
-					<div class="col-sm-10 offset-sm-1">
-						
-						{% with messages = get_flashed_messages() %}
-							{% if messages %}
-								<ul>
-									{% for message in messages %}
-									<li>{{ message }}</li>
-									{% endfor %}
-								</ul>
-							{% endif %}
-						{% endwith %}
-						
+					<div class="col-sm-10 offset-sm-1">						
 						{% block content %}{% endblock %}
 					</div>
 				</div>

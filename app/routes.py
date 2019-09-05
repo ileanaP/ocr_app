@@ -5,7 +5,7 @@ Created on Sun May 26 12:38:42 2019
 @author: ILENUCA
 """
 
-from flask import render_template, flash, request
+from flask import render_template, request
 from flask.helpers import make_response
 from app.services.UploadFileService import UploadFileService
 from app import app
@@ -22,7 +22,7 @@ def example():
     return render_template('example.html', title='Example OFC')
 
 @app.route('/upload', methods=['GET',  'POST'])
-def upload():
+def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
     form = UploadForm()
     returncode = 0
     if request.method == 'POST': #this url will be POSTed only from AJAX

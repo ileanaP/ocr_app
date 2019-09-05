@@ -57,6 +57,11 @@ body{
 	padding-top:1em;
 }
 
+/* hack for hiding default WTF label for file input - TO DO */
+.form-group .control-label{
+    display:none;
+}
+
 #footer {
 		width:90%;
 		text-align:right;

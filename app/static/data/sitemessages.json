@@ -1,0 +1,32 @@
+{
+"1001":
+    {
+        "message" : "No file was uploaded",
+        "type" : "error"
+    },
+"1002":
+    {
+        "message" : "The file exceeds 3MB. Please choose another one",
+        "type" : "error"
+    },
+"1003":
+    {
+        "message" : "The file was successfully uploaded",
+        "type" : "success"
+    },
+"1004":
+    {
+        "message" : "This file extention is not allowed",
+        "type" : "error"
+    },
+"1005":
+    {
+        "message" : "There was an error while submitting the form",
+        "type" : "error"
+    },
+"1006":
+    {
+        "message" : "Something went wrong. Please contact support.",
+        "type" : "error"
+    }
+}
