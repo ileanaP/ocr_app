@@ -1,0 +1,16 @@
+<div class="row">
+    <div class="col-sm-4">
+        <h2>Next steps...</h2>
+        <!--form-->
+        <div class="form-group">     
+            {{ wtf.form_field(postUploadForm.preprocessing, class="checkbox", checked=True) }}
+            {{ wtf.form_field(postUploadForm.segmentation, class="checkbox", checked=True) }}
+            {{ wtf.form_field(postUploadForm.recognition, class="checkbox", checked=True) }}
+        </div>
+        <!--/form-->
+  
+    </div>
+    <div class="col-sm-8">
+        <img src="{{ url_for('static', filename='img/uploads/flower.jpeg') }}" />
+    </div>
+</div>

@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="pagecontent">
-{% include "upload.html" %}
-</div>
+  <div id="pagecontent">
+    <div class="upload js-upload-template">
+      {% include "upload.html" %}
+    </div>
+    <div class="postupload js-postupload-template">
+      {% include "postupload.html" %}
+    </div>
+    <div class="scan js-scan-template">
+      {% include "scan.html" %}
+    </div>
+  </div>
 {% endblock %}

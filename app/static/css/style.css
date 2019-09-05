@@ -22,16 +22,16 @@ body{
 	border: 1px solid black;
 	box-shadow: 0px 10px 16px #888888;
 	min-height:100%;
-	position:relative
+	position:relative;
 }
 
 .content{
+    margin-top:20px;
 	padding-top:6em;
+	margin-bottom: 90px;
 }
 
 .app-logo{
-	/*margin-left:0px;
-	margin-right:0px;*/
 	left:0;
 	right:0;
 	padding:5px;
@@ -42,30 +42,82 @@ body{
 	height:4em;
 }
 
-.app-logo a{
-    color: white;
-    text-decoration: none;
-}
-
-.logo-text{
-	float:left;
-	font-size:2em;
-}
-
-.logo-menu{
-	float:right;
-	padding-top:1em;
-}
-
-/* hack for hiding default WTF label for file input - TO DO */
-.form-group .control-label{
-    display:none;
-}
-
 #footer {
-		width:90%;
+        /*padding-top:50px;*/
+		width:85%;
 		text-align:right;
 		position:absolute;
 		bottom:0;
-		height:40px;			/* Height of the footer */
-	}
+		height:70px;			/* Height of the footer */
+		margin-left: auto;
+        margin-right: auto;
+        left: 0;
+        right: 0;
+}
+
+.app-logo a { color: white; text-decoration: none; }
+.logo-text{	float:left; font-size:2em; }
+.logo-menu{	float:right; padding-top:1em; }
+	
+/* ** UPLOAD - pupload.html ***   */
+/* hack for hiding default WTF label for file input - TO DO */
+.upload .form-group .control-label{ display:none; }
+
+/* ** POST UPLOAD - postupload.html ***   */
+.postupload img { max-width : 100%; }
+.postupload .form-group { padding-top:30px; }
+.postupload .form-group input { margin-right:10px; }
+.postupload .form-group .checkbox { padding-top: 5px; padding-bottom: 5px; }
+
+
+
+
+	
+/* ** CUSTOM CHECKBOX *** */
+/*
+ * code courtesy of Milos Protic - https://dev.to/proticm/styling-html-checkboxes-is-super-easy-302o
+ */
+.checkbox label {
+    display: inline-flex;
+    cursor: pointer;
+    position: relative;
+}
+
+.checkbox label > span {
+    color: #1E69B3;
+    padding: 0.5rem 0.25rem;
+}
+
+.checkbox label > input {
+    height: 25px;
+    width: 25px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -o-appearance: none;
+    appearance: none;
+    border: 1px solid #1E69B3;
+    border-radius: 4px;
+    outline: none;
+    transition-duration: 0.3s;
+    background-color: #fff;
+    cursor: pointer;
+  }
+
+.checkbox label > input:checked {
+    border: 1px solid #fff;
+    background-color: #1E69B3;
+}
+
+.checkbox label > input:checked + span::before {
+    content: '\2713';
+    display: block;
+    text-align: center;
+    color: #fff;
+    position: absolute;
+    left: 0.7rem;
+    top: 0.2rem;
+}
+
+.checkbox  label > input:active {
+    border: 2px solid #1E69B3;
+}

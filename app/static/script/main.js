@@ -20,6 +20,28 @@ function showNotif(details)
 
 $(document).ready(function(){
 
+    if($('#recognition').is(":checked"))
+        console.log('recognition checked');
+
+    $('.js-upload-template').hide();
+    $('.js-postupload-template').show();
+    $('.js-scan-template').hide();
+    
+    $('.postupload input[type="checkbox"]').click(function(e){
+        if($(this).prop("checked"))
+        {
+            $(this).parent().parent().prevAll().each(function(e){
+                $(this).children().children().first().prop('checked', true);
+            });
+        }
+        else
+        {
+            $(this).parent().parent().nextAll().each(function(e){
+                $(this).children().children().first().prop('checked', false);
+            });
+        }
+    });
+
     $(".js-file-form").submit(function(e){
         e.preventDefault();
         

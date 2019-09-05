@@ -1,18 +1,18 @@
 <h2>Upload Image</h2>
 <br/>
 <form action="/upload" method="POST" class="js-file-form" role="form" enctype='multipart/form-data'>
-    {{ form.hidden_tag() }}
+    {{ uploadForm.hidden_tag() }}
   <div class="input-group">
     <div class="input-group-prepend">
       <span class="input-group-text" id="inputGroupFileAddon01">Upload</span>
     </div>
     <div class="custom-file">
-      {{ wtf.form_field(form.file, class="custom-file-input js-file", **{'aria-describedby': "inputGroupFileAddon01"}) }}
+      {{ wtf.form_field(uploadForm.file, class="custom-file-input js-file", **{'aria-describedby': "inputGroupFileAddon01"}) }}
       <label class="custom-file-label js-file-label" for="inputGroupFile01">Choose file</label>
     </div>
     </div>
 <br/>
 <p>Upload Image of a reciept, a clean shot with contrasting background</p>
 <hr class="d-sm-none">
-{{ wtf.form_field(form.submit, class="btn btn-primary js-file-form-submit") }}
+{{ wtf.form_field(uploadForm.submit, class="btn btn-primary js-file-form-submit") }}
 </form>

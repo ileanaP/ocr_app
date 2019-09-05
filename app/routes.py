@@ -9,13 +9,14 @@ from flask import render_template, request
 from flask.helpers import make_response
 from app.services.UploadFileService import UploadFileService
 from app import app
-from app.forms import UploadForm
+from app.forms import UploadForm, PostUploadForm
 
 @app.route('/')
 @app.route('/index')
 def index():
-    form = UploadForm()
-    return render_template('index.html', title='Home', form=form)
+    uploadForm = UploadForm()
+    postUploadForm = PostUploadForm()
+    return render_template('index.html', title='Home', uploadForm=uploadForm, postUploadForm = postUploadForm)
 
 @app.route('/example')
 def example():
@@ -23,12 +24,12 @@ def example():
 
 @app.route('/upload', methods=['GET',  'POST'])
 def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
-    form = UploadForm()
+    uploadForm = UploadForm()
     returncode = 0
     if request.method == 'POST': #this url will be POSTed only from AJAX
-        if form.validate_on_submit():
+        if uploadForm.validate_on_submit():
             uploader = UploadFileService()
-            returncode = uploader.upload(form.file.data)
+            returncode = uploader.upload(uploadForm.file.data)
         else:
             returncode = '1005' #there was an error in submitting the form
     return returncode
