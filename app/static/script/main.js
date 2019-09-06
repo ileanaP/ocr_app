@@ -20,11 +20,8 @@ function showNotif(details)
 
 $(document).ready(function(){
 
-    if($('#recognition').is(":checked"))
-        console.log('recognition checked');
-
-    $('.js-upload-template').hide();
-    $('.js-postupload-template').show();
+    $('.js-upload-template').show();
+    $('.js-postupload-template').hide();
     $('.js-scan-template').hide();
     
     $('.postupload input[type="checkbox"]').click(function(e){

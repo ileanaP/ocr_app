@@ -18,3 +18,4 @@ class PostUploadForm(FlaskForm):
     preprocessing = BooleanField('Image Preprocessing', default="checked")
     segmentation = BooleanField('Image Segmentation', default="checked")
     recognition = BooleanField('Text Recognition', default="checked")
+    submit = SubmitField("Apply")

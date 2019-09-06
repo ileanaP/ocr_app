@@ -68,9 +68,7 @@ body{
 .postupload .form-group { padding-top:30px; }
 .postupload .form-group input { margin-right:10px; }
 .postupload .form-group .checkbox { padding-top: 5px; padding-bottom: 5px; }
-
-
-
+.postupload .js-submit { margin-top:30px; }
 
 	
 /* ** CUSTOM CHECKBOX *** */
