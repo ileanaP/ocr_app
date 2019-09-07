@@ -8,6 +8,7 @@ Created on Sun May 26 12:38:42 2019
 from flask import render_template, request
 from flask.helpers import make_response
 from app.services.FileService import FileService
+from app.services.ImageService import ImageService
 from app import app
 from app.forms import UploadForm, PostUploadForm
 
@@ -25,7 +26,7 @@ def example():
 @app.route('/upload', methods=['GET',  'POST'])
 def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
     uploadForm = UploadForm()
-    returncode = 0
+    returncode = '0'
     
     if request.method == 'POST': #this url will be POSTed only from AJAX
         if uploadForm.validate_on_submit():
@@ -39,6 +40,18 @@ def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
         fileService = FileService()
         returncode = fileService.delete(filename)
     
+    return returncode
+
+@app.route('/image', methods=['GET',  'POST'])
+def manipulateImage():
+    returncode = '0'
+    
+    if request.method == 'GET':
+        operation = request.args.get('operation')
+        filename = request.args.get('filename')
+        imageService = ImageService(filename) # TO DO - Image Service
+        returncode = imageService.apply(operation)
+        
     return returncode
 
 """ ERROR HANDLING  """
