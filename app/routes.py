@@ -7,7 +7,7 @@ Created on Sun May 26 12:38:42 2019
 
 from flask import render_template, request
 from flask.helpers import make_response
-from app.services.UploadFileService import UploadFileService
+from app.services.FileService import FileService
 from app import app
 from app.forms import UploadForm, PostUploadForm
 
@@ -26,14 +26,20 @@ def example():
 def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
     uploadForm = UploadForm()
     returncode = 0
+    
     if request.method == 'POST': #this url will be POSTed only from AJAX
         if uploadForm.validate_on_submit():
-            uploader = UploadFileService()
-            returncode = uploader.upload(uploadForm.file.data)
+            fileService = FileService()
+            returncode = fileService.upload(uploadForm.file.data)
         else:
             returncode = '1005' #there was an error in submitting the form
+            
+    if request.method == 'GET': #to rewrite - request.args pentru GET
+        filename = request.args.get('filename')
+        fileService = FileService()
+        returncode = fileService.delete(filename)
+    
     return returncode
-#    return render_template('upload.html', title="Upload Form", form=form)
 
 """ ERROR HANDLING  """
 @app.errorhandler(404)

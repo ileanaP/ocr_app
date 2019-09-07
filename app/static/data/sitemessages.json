@@ -28,5 +28,10 @@
     {
         "message" : "Something went wrong. Please contact support.",
         "type" : "error"
+    },
+"1007":
+    {
+        "message" : "The file was deleted. You will get back to previous page.",
+        "type" : "warning"
     }
 }

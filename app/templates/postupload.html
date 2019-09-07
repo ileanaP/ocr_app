@@ -7,11 +7,12 @@
             {{ wtf.form_field(postUploadForm.segmentation, class="checkbox", checked=True) }}
             {{ wtf.form_field(postUploadForm.recognition, class="checkbox", checked=True) }}
             {{ wtf.form_field(postUploadForm.submit, class="btn btn-primary js-submit") }}
+            <button type="button" class="btn btn-default js-return-to-upload">Try Another Image</button>
         </div>
         <!--/form-->
   
     </div>
     <div class="col-sm-8">
-        <img src="{{ url_for('static', filename='img/uploads/flower.jpeg') }}" />
+        <img src="" class="js-image" />
     </div>
 </div>

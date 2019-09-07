@@ -6,11 +6,12 @@ Created on Wed Sep  4 13:38:48 2019
 """
 
 import os
+import json
 from app import app
 from werkzeug import secure_filename
 from werkzeug.exceptions import abort, RequestEntityTooLarge
 
-class UploadFileService:
+class FileService:
 #    def __init__(self, file): #se da ca argument file.data al wtform
 
     def upload(self, file):
@@ -26,6 +27,19 @@ class UploadFileService:
 
         except RequestEntityTooLarge: #does not work on dev env
             abort(413, 'File exceeds server capabilities')
+            
+    def delete(self, filename):
+        filename = secure_filename(filename)
+        filePath = self.getFilePath(filename)
+        
+        try:
+            os.remove(filePath)
+            return '1007'
+        except:
+            return '1006'
+
+    def getFilePath(self, filename):
+        return os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
     def isFileExtentionAllowed(self, filename): #ar putea fi imbunatatit
             ext = filename.split('.')[1].lower()
@@ -42,10 +56,10 @@ class UploadFileService:
     #include file field in form
     def uploadFileToServer(self, file):
         filename = secure_filename(file.filename)
-            
+        
         if self.isFileExtentionAllowed(filename):
-            filePath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filePath)
-            return '1003' #file was uploaded succcesfully
+            filePath = self.getFilePath(filename)
+            file.save(filePath) #TO DO - sa adauge un 01 la finalul numelui fisierului daca numele exista deja
+            return filename #file was uploaded succcesfully
         else:
             return '1004' #file extention not allowed
