@@ -6,7 +6,6 @@ Created on Wed Sep  4 13:38:48 2019
 """
 
 import os
-import json
 from app import app
 from werkzeug import secure_filename
 from werkzeug.exceptions import abort, RequestEntityTooLarge
