@@ -9,15 +9,20 @@ import numpy as np
 import cv2
 import sys
 
-class ImagePreprocessService:
-    def __init__(self, filename):
-        self.image = cv2.imread(filename)
+class ImagePreprocessingService:
+    def __init__(self, filePath, targetFilePath):
+        self.image = cv2.imread(filePath)
         self.createBorder()
         self.orig = self.image.copy()
         
         self.gray = self.processGrayImage()
         
-        self.contours = cv2.findContours(self.gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+        if cv2.__version__.startswith('3.'):
+            self.contours = cv2.findContours(self.gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+        else:
+            if cv2.__version__.startswith('4.'):
+                self.contours = cv2.findContours(self.gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
+        
         self.maxContour = self.getMaxContourRectangle()
         
 #        cv2.drawContours(gray, [self.maxContour], -1, (255,255,255), 2)
@@ -25,7 +30,8 @@ class ImagePreprocessService:
         warpedImage = self.getTransformedImage(self.orig, self.maxContour/self.ratio)
         scannedImage = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2GRAY)
         scannedImage2 = cv2.threshold(scannedImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-        cv2.imwrite(filename, scannedImage2)
+        
+        cv2.imwrite(targetFilePath, scannedImage2)
         
     def orderPoints(self,a):
         a = a.reshape(4,2)
@@ -83,11 +89,25 @@ class ImagePreprocessService:
     
         maxContour = self.contours[cAreas.index(max(cAreas))]
         
-        minX = maxContour[maxContour[:, :, 0].argmin()][0][0]
-        maxX = maxContour[maxContour[:, :, 0].argmax()][0][0]
-        minY = maxContour[maxContour[:, :, 1].argmin()][0][1]
-        maxY = maxContour[maxContour[:, :, 1].argmax()][0][1]
-        
+        if cv2.__version__.startswith('3.'):
+            minX = maxContour[maxContour[:, :, 0].argmin()][0][0]
+            maxX = maxContour[maxContour[:, :, 0].argmax()][0][0]
+            minY = maxContour[maxContour[:, :, 1].argmin()][0][1]
+            maxY = maxContour[maxContour[:, :, 1].argmax()][0][1]
+        else:
+            if cv2.__version__.startswith('4.'):
+                temp = int(maxContour[:, :, 0].argmin())
+                minX = maxContour[temp][0][0]
+                
+                temp = int(maxContour[:, :, 0].argmax())
+                maxX = maxContour[temp][0][0]
+                
+                temp = maxContour[:, :, 1].argmin()
+                minY = maxContour[temp][0][1]
+                
+                temp = maxContour[:, :, 1].argmax()
+                maxY = maxContour[temp][0][1]
+            
         topLeft = np.array([np.array([minX, minY])])
         topRight = np.array([np.array([minX, maxY])])
         bottomLeft = np.array([np.array([maxX, minY])])

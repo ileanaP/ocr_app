@@ -7,7 +7,7 @@ Created on Sat Sep  7 19:43:50 2019
 
 import os
 from app import app
-from app.services.ImagePreprocessService import ImagePreprocessService
+from app.services.ImagePreprocessingService import ImagePreprocessingService
 #from app.services.ImageSegmentationService import ImageSegmentationService
 
 class ImageService:
@@ -17,6 +17,14 @@ class ImageService:
         self.operator = None
         
     def apply(self, operation):
-        if operation is 'preprocess':
-            self.operator = ImagePreprocessService(self.filename)
+        returnvalue = 'default return value'
+        if operation == 'preprocessing':
+            returnvalue =  '01 - got here without fuss'
+            targetFilePath = os.path.join(app.config['UPLOAD_FOLDER'], self.filename.replace(".", "_preprocessing."))
+            self.operator = ImagePreprocessingService(self.filePath, targetFilePath)
+            returnvalue =  '02 - got here :o shocker'
+        else:
+            returnvalue = '03 - there is no operation ppl'
+            
+        return returnvalue
             

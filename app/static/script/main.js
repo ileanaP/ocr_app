@@ -2,10 +2,6 @@ var mimeTypes = ['jpg', 'bmp', 'png', 'tif'];
 var siteMessages;
 var filename;
 
-let defaultAjaxError = (data) => {
-    reject(data);
-}
-
 Noty.overrideDefaults({
     layout   : 'topCenter',
     theme    : 'nest',
@@ -22,8 +18,8 @@ $(document).ready(function(){
     	siteMessages = JSON.parse(JSON.stringify(data));
 	});
 
-    $('.js-upload').hide();
-    $('.js-postupload').show();
+    $('.js-upload').show();
+    $('.js-postupload').hide();
     $('.js-scan').hide();
     
     $('.js-postupload input[type="checkbox"]').click(function(e){
@@ -168,7 +164,8 @@ $(document).ready(function(){
     
             })
             .catch(data => {
-                showNotif(error);
+                console.log(data);
+                showNotif(data);
             });
         }
         else
@@ -183,7 +180,12 @@ function promiseApplyToImageCall(data)
         let success = (data) => {
             resolve(data);
         }
-        callAjax("GET", "/image", data, success, defaultAjaxError);
+
+        let error = (data) => {
+            reject(data);
+        }
+
+        callAjax("GET", "/image", data, success, error);
     });
 
     return promise;
@@ -198,7 +200,12 @@ function promiseDeleteFileCall(data)
             else
                 reject(data);
         }
-        callAjax("GET", "/upload", data, success, defaultAjaxError);
+
+        let error = (data) => {
+            reject(data);
+        }
+
+        callAjax("GET", "/upload", data, success, error);
     });
     return promise;
 }
@@ -212,7 +219,12 @@ function promiseUploadFileCall(data)
             else
                 reject(data); //file was not uploaded, a code corresponding to the reason was returned
         }
-        callAjax("POST", "/upload", data, success, defaultAjaxError);
+
+        let error = (data) => {
+            reject(data);
+        }
+
+        callAjax("POST", "/upload", data, success, error);
     });
     return promise;
 }

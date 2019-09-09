@@ -47,10 +47,9 @@ def manipulateImage():
     
     if request.method == 'GET':
         operation = request.args.get('operation')
-        returncode = operation
-        #filename = request.args.get('filename')
-        #imageService = ImageService(filename) # TO DO - Image Service
-        #returncode = imageService.apply(operation)
+        filename = request.args.get('filename')
+        imageService = ImageService(filename)
+        returncode = imageService.apply(operation)
         
     return returncode
 
