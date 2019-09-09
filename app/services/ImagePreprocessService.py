@@ -25,7 +25,7 @@ class ImagePreprocessService:
         warpedImage = self.getTransformedImage(self.orig, self.maxContour/self.ratio)
         scannedImage = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2GRAY)
         scannedImage2 = cv2.threshold(scannedImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-        cv2.imwrite('scannedimage2.jpg', scannedImage2)
+        cv2.imwrite(filename, scannedImage2)
         
     def orderPoints(self,a):
         a = a.reshape(4,2)

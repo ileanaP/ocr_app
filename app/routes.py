@@ -7,17 +7,16 @@ Created on Sun May 26 12:38:42 2019
 
 from flask import render_template, request
 from flask.helpers import make_response
+from app import app
 from app.services.FileService import FileService
 from app.services.ImageService import ImageService
-from app import app
-from app.forms import UploadForm, PostUploadForm
+from app.forms import UploadForm
 
 @app.route('/')
 @app.route('/index')
 def index():
     uploadForm = UploadForm()
-    postUploadForm = PostUploadForm()
-    return render_template('index.html', title='Home', uploadForm=uploadForm, postUploadForm = postUploadForm)
+    return render_template('index.html', title='Home', uploadForm=uploadForm)
 
 @app.route('/example')
 def example():
@@ -48,9 +47,10 @@ def manipulateImage():
     
     if request.method == 'GET':
         operation = request.args.get('operation')
-        filename = request.args.get('filename')
-        imageService = ImageService(filename) # TO DO - Image Service
-        returncode = imageService.apply(operation)
+        returncode = operation
+        #filename = request.args.get('filename')
+        #imageService = ImageService(filename) # TO DO - Image Service
+        #returncode = imageService.apply(operation)
         
     return returncode
 

@@ -2,6 +2,10 @@ var mimeTypes = ['jpg', 'bmp', 'png', 'tif'];
 var siteMessages;
 var filename;
 
+let defaultAjaxError = (data) => {
+    reject(data);
+}
+
 Noty.overrideDefaults({
     layout   : 'topCenter',
     theme    : 'nest',
@@ -18,11 +22,11 @@ $(document).ready(function(){
     	siteMessages = JSON.parse(JSON.stringify(data));
 	});
 
-    $('.js-upload-template').show();
-    $('.js-postupload-template').hide();
-    $('.js-scan-template').hide();
+    $('.js-upload').hide();
+    $('.js-postupload').show();
+    $('.js-scan').hide();
     
-    $('.postupload input[type="checkbox"]').click(function(e){
+    $('.js-postupload input[type="checkbox"]').click(function(e){
         if($(this).prop("checked"))
         {
             $(this).parent().parent().prevAll().each(function(e){
@@ -42,37 +46,15 @@ $(document).ready(function(){
         
         var form = this;
         var formData = new FormData(form);
-    
-        const promiseUploadFile = new Promise(function(resolve, reject){
-            
-            let success = (data) => {
-                if(isNaN(data))  //file was uploaded successfully, filename was returned
-                {
-                    resolve(data);
-                }
-                else
-                {
-                    reject(data) //file was not uploaded, a code corresponding to the reason was returned
-                }
-            }
-            
-            let error = (data) => {
-                reject(data);
-            }
-            
-            callAjax("POST", "/upload", formData, success, error);
-        });
         
-        const execPromiseUploadFile = () => 
-        {
-            promiseUploadFile.then(data => {
+        promiseUploadFileCall(formData).then(data => {
                 filename = data;
                 showNotif('1003');
                 $(".postupload .js-image").attr("src", "/static/img/uploads/" + filename);
                 
                 setTimeout(() => {                   
-                    $('.js-upload-template').hide();
-                    $('.js-postupload-template').show();
+                    $('.js-upload').hide();
+                    $('.js-postupload').show();
                 }, 2000);
                 
             }).catch(error => { 
@@ -80,10 +62,7 @@ $(document).ready(function(){
                     showNotif('1006');
                 else
                     showNotif(error);
-            });
-        }
-        
-        execPromiseUploadFile();        
+            });     
     });
 
 	$('.js-file').change(function()
@@ -111,54 +90,132 @@ $(document).ready(function(){
         	return;
         }
         
-        const promiseDeleteFile = new Promise(function(resolve, reject){
-            data = 'operation=delete&filename=' + filename;
-           
-            let success = (data) => {
-                if(data == 1007)
-                {
-                    console.log('ajax success with resolve; data: ' + data);
-                    resolve(data);
-                }
-                else
-                {
-                    console.log('ajax success with reject; data: ' + data);
-                    consolelog(data);
-                    reject(data);
-                }    
-            }
-            
-            let error = (data) => {
-                console.log('ajax error; data: ' + data);
-                reject(data);
-            }
-            
-            callAjax("GET", "/upload", data, success, error);
-        });
+        data = 'operation=delete&filename=' + filename;
         
-        const execPromiseDeleteFile = () => {
-            promiseDeleteFile.then(data => {
+        promiseDeleteFileCall(data).then(data => {
                 showNotif(data);
                 setTimeout(() => {
                     filename = '';
                     
                     $('.js-file').val("");
         			$('.js-file-label').html("Choose file");
-                    $('.js-upload-template').show();
-                    $('.js-postupload-template').hide();
-                    $(".js-postupload-template .js-image").attr("src", "");
+                    $('.js-upload').show();
+                    $('.js-postupload').hide();
+                    $(".js-postupload .js-image").attr("src", "");
                     
                 }, 3000);
             }).catch(error => {
                 showNotif(error);
             });
-        }
         
-        execPromiseDeleteFile();
-    	
-	});
+        });
+
+    $('.js-postupload .js-apply').on('click', function(e){
+
+        var operations = {
+            preprocessing: $('.js-checkbox-preprocessing').prop("checked"),
+            segmentation: $('.js-checkbox-segmentation').prop("checked"),
+            recognition: $('.js-checkbox-recognition').prop("checked")
+        }
+
+        /*if(operations.preprocessing)
+            console.log('preprocessing selected');
+        else
+            console.log('preprocessing not selected');
+
+        if(operations.segmentation)
+            console.log('segmentation selected');
+        else
+            console.log('segmentation not selected');
+
+        if(operations.recognition)
+            console.log('recognition selected');
+        else
+            console.log('recognition not selected');
+        */
+
+        if(operations.preprocessing)
+        {
+
+            data = "filename=" + filename + "&operation=preprocessing";
+
+            promiseApplyToImageCall(data).then(data => {
+                
+                //TO DO - image preprocessing happened, manipulate the DOM
+                console.log('image preprocess - ' + data);
+                
+                if(operations.segmentation) //do next thing
+                {
+                    data = "filename=" + filename + "&operation=segmentation";
+                    return promiseApplyToImageCall(data);
+                }
+            })
+            .then(data => {
+
+                //TO DO - image segmentation happened, manipulate the DOM
+                console.log('image segment - ' + data);
+    
+                if(operations.recognition) //do next thing
+                {
+                    data = "filename=" + filename + "&operation=recognition";
+                    return promiseApplyToImageCall(data);
+                }
+            })
+            .then(data => {
+               
+                //TO DO - text recognition happened, manipulate the DOM
+                console.log('image text rec - ' + data);
+    
+            })
+            .catch(data => {
+                showNotif(error);
+            });
+        }
+        else
+            console.log('Image preprocessing not Selected');
+    });
 	
 });
+
+function promiseApplyToImageCall(data)
+{
+    const promise = new Promise(function(resolve, reject) {
+        let success = (data) => {
+            resolve(data);
+        }
+        callAjax("GET", "/image", data, success, defaultAjaxError);
+    });
+
+    return promise;
+}
+
+function promiseDeleteFileCall(data)
+{
+    const promise = new Promise(function (resolve, reject) {
+        let success = (data) => {
+            if (data == 1007)
+                resolve(data);
+            else
+                reject(data);
+        }
+        callAjax("GET", "/upload", data, success, defaultAjaxError);
+    });
+    return promise;
+}
+
+function promiseUploadFileCall(data)
+{
+    const promise = new Promise(function (resolve, reject) {
+        let success = (data) => {
+            if (isNaN(data)) //file was uploaded successfully, filename was returned
+                resolve(data);
+            else
+                reject(data); //file was not uploaded, a code corresponding to the reason was returned
+        }
+        callAjax("POST", "/upload", data, success, defaultAjaxError);
+    });
+    return promise;
+}
 
 function showNotif(code)
 {
