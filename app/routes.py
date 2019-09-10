@@ -37,7 +37,7 @@ def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
     if request.method == 'GET': #to rewrite - request.args pentru GET
         filename = request.args.get('filename')
         fileService = FileService()
-        returncode = fileService.delete(filename)
+        returncode = fileService.delete(filename) # TO DO - sa stearga si artefacts pt fisier (_preprocessed, etc...)
     
     return returncode
 

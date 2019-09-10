@@ -68,8 +68,13 @@ body{
 .postupload .form-group { padding-top:30px; }
 .postupload .form-group input { margin-right:10px; }
 .postupload .form-group .checkbox { padding-top: 5px; padding-bottom: 5px; }
-.postupload .btn { margin-top:30px; }
+.postupload .buttons-group { margin-top:30px; }
+.postupload .buttons-group .btn-light { margin-bottom: 10px; }
+.postupload .buttons-group .js-toggle-original { display: none; }
 
+.floatLeft { float: left; }
+.floatRight { float: right; }
+.clear { clear: both; }
 	
 /* ** CUSTOM CHECKBOX *** */
 /*

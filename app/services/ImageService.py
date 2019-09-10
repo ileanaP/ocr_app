@@ -17,14 +17,19 @@ class ImageService:
         self.operator = None
         
     def apply(self, operation):
-        returnvalue = 'default return value'
+        returnvalue = '0'
+        
         if operation == 'preprocessing':
-            returnvalue =  '01 - got here without fuss'
-            targetFilePath = os.path.join(app.config['UPLOAD_FOLDER'], self.filename.replace(".", "_preprocessing."))
-            self.operator = ImagePreprocessingService(self.filePath, targetFilePath)
-            returnvalue =  '02 - got here :o shocker'
+            targetFilename = self.filename.replace(".", "_preprocessing.")
+            targetFilePath = os.path.join(app.config['UPLOAD_FOLDER'], targetFilename)
+            
+            self.operator = ImagePreprocessingService(self.filePath)
+            self.operator.apply(targetFilePath)
+            
+            if self.operator.processed:
+                returnvalue =  targetFilename
         else:
-            returnvalue = '03 - there is no operation ppl'
+            returnvalue = 'operation not yet defined'
             
         return returnvalue
             

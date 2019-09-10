@@ -10,28 +10,35 @@ import cv2
 import sys
 
 class ImagePreprocessingService:
-    def __init__(self, filePath, targetFilePath):
-        self.image = cv2.imread(filePath)
+    def __init__(self, filePath):
+        self.filePath = filePath
+        self.processed = False
+        
+    def apply(self, targetFilePath):
+        self.image = cv2.imread(self.filePath)
         self.createBorder()
         self.orig = self.image.copy()
         
         self.gray = self.processGrayImage()
         
-        if cv2.__version__.startswith('3.'):
+        if self.isCV3():
             self.contours = cv2.findContours(self.gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
         else:
-            if cv2.__version__.startswith('4.'):
+            if self.isCV4():
                 self.contours = cv2.findContours(self.gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
         
         self.maxContour = self.getMaxContourRectangle()
         
 #        cv2.drawContours(gray, [self.maxContour], -1, (255,255,255), 2)
         
-        warpedImage = self.getTransformedImage(self.orig, self.maxContour/self.ratio)
+#        warpedImage = self.getTransformedImage(self.orig, self.maxContour/self.ratio)
+        warpedImage = self.getTransformedImage(self.orig, self.maxContour)
         scannedImage = cv2.cvtColor(warpedImage, cv2.COLOR_BGR2GRAY)
         scannedImage2 = cv2.threshold(scannedImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
         
         cv2.imwrite(targetFilePath, scannedImage2)
+        
+        self.processed = True
         
     def orderPoints(self,a):
         a = a.reshape(4,2)
@@ -77,8 +84,8 @@ class ImagePreprocessingService:
         
         height, width, depth = self.image.shape
         self.ratio = 500/width
-        newH, newW  = height*self.ratio, width*self.ratio
-        gray = cv2.resize(gray, (int(newW), int(newH)))
+#        newH, newW  = height*self.ratio, width*self.ratio
+#        gray = cv2.resize(gray, (int(newW), int(newH)))
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         gray = cv2.Canny(gray,100,200)
         
@@ -89,13 +96,13 @@ class ImagePreprocessingService:
     
         maxContour = self.contours[cAreas.index(max(cAreas))]
         
-        if cv2.__version__.startswith('3.'):
+        if self.isCV3():
             minX = maxContour[maxContour[:, :, 0].argmin()][0][0]
             maxX = maxContour[maxContour[:, :, 0].argmax()][0][0]
             minY = maxContour[maxContour[:, :, 1].argmin()][0][1]
             maxY = maxContour[maxContour[:, :, 1].argmax()][0][1]
         else:
-            if cv2.__version__.startswith('4.'):
+            if self.isCV4():
                 temp = int(maxContour[:, :, 0].argmin())
                 minX = maxContour[temp][0][0]
                 
@@ -127,5 +134,11 @@ class ImagePreprocessingService:
     
     def distBetweenP(self, a,b):
         return int(np.sqrt((b[0]-a[0])**2 + (b[1] - a[1])**2))
+    
+    def isCV3(self):
+        return cv2.__version__.startswith('3.')
+    
+    def isCV4(self):
+        return cv2.__version__.startswith('4.')
     
 #imgScanner = ImageScannerService('reciept01.jpg')

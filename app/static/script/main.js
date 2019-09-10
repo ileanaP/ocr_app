@@ -1,6 +1,8 @@
 var mimeTypes = ['jpg', 'bmp', 'png', 'tif'];
 var siteMessages;
 var filename;
+var processedFilename;
+var uploadsFolder = "/static/img/uploads/";
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -46,7 +48,7 @@ $(document).ready(function(){
         promiseUploadFileCall(formData).then(data => {
                 filename = data;
                 showNotif('1003');
-                $(".postupload .js-image").attr("src", "/static/img/uploads/" + filename);
+                $(".postupload .js-image").attr("src", uploadsFolder + filename);
                 
                 setTimeout(() => {                   
                     $('.js-upload').hide();
@@ -105,6 +107,19 @@ $(document).ready(function(){
             });
         
         });
+        
+    $('.js-toggle-original').on('click', function(e){ // TO DO - sa ascund butonul cand se incarca o noua imagine
+        if($(this).text() == "See Original")
+        {
+            $(".postupload .js-image").attr("src", uploadsFolder + filename);
+            $(this).text("See Preprocessed");
+        }
+        else
+        {
+            $(".postupload .js-image").attr("src", uploadsFolder + processedFilename);    
+            $(this).text("See Original");  
+        }
+    });
 
     $('.js-postupload .js-apply').on('click', function(e){
 
@@ -113,22 +128,6 @@ $(document).ready(function(){
             segmentation: $('.js-checkbox-segmentation').prop("checked"),
             recognition: $('.js-checkbox-recognition').prop("checked")
         }
-
-        /*if(operations.preprocessing)
-            console.log('preprocessing selected');
-        else
-            console.log('preprocessing not selected');
-
-        if(operations.segmentation)
-            console.log('segmentation selected');
-        else
-            console.log('segmentation not selected');
-
-        if(operations.recognition)
-            console.log('recognition selected');
-        else
-            console.log('recognition not selected');
-        */
 
         if(operations.preprocessing)
         {
@@ -139,6 +138,9 @@ $(document).ready(function(){
                 
                 //TO DO - image preprocessing happened, manipulate the DOM
                 console.log('image preprocess - ' + data);
+                processedFilename = data;
+                $(".postupload .js-image").attr("src", uploadsFolder + data);
+                $('.js-toggle-original').show();
                 
                 if(operations.segmentation) //do next thing
                 {
@@ -177,7 +179,7 @@ $(document).ready(function(){
 function promiseApplyToImageCall(data)
 {
     const promise = new Promise(function(resolve, reject) {
-        let success = (data) => {
+        let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
             resolve(data);
         }
 
