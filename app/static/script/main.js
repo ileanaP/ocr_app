@@ -3,6 +3,8 @@ var siteMessages;
 var filename;
 var processedFilename;
 var uploadsFolder = "/static/img/uploads/";
+var defaultTimeout = 0;
+
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -53,7 +55,7 @@ $(document).ready(function(){
                 setTimeout(() => {                   
                     $('.js-upload').hide();
                     $('.js-postupload').show();
-                }, 2000);
+                }, defaultTimeout);
                 
             }).catch(error => { 
                 if(isNaN(error))
@@ -68,6 +70,7 @@ $(document).ready(function(){
 		var fileName = $('.js-file').val().split("\\")[2];
 		var ext = fileName.split(".")[1];
 		
+		// TO DO - sa accepte si extensii cu upper case
 		if(!$.inArray(ext, mimeTypes)) // de ce merge asa? ^_^'
 		{
 			$('.js-file-label').html(fileName);		
@@ -101,7 +104,7 @@ $(document).ready(function(){
                     $('.js-postupload').hide();
                     $(".js-postupload .js-image").attr("src", "");
                     
-                }, 3000);
+                }, defaultTimeout);
             }).catch(error => {
                 showNotif(error);
             });
@@ -129,65 +132,59 @@ $(document).ready(function(){
             recognition: $('.js-checkbox-recognition').prop("checked")
         }
 
-        if(operations.preprocessing)
-        {
+        callArgs = "filename=" + filename + "&operation=";
 
-            data = "filename=" + filename + "&operation=preprocessing";
+        promiseApplyToImageCall(operations.preprocessing, callArgs + "preprocessing").then(data => {
+            
+            //TO DO - image preprocessing happened, manipulate the DOM
+            console.log('image preprocess - ' + data);
+            processedFilename = data;
+            $(".postupload .js-image").attr("src", uploadsFolder + data);
+            $('.js-toggle-original').show();
+            
+            return promiseApplyToImageCall(operations.segmentation, callArgs + "segmentation");
+        })
+        .then(data => {
 
-            promiseApplyToImageCall(data).then(data => {
-                
-                //TO DO - image preprocessing happened, manipulate the DOM
-                console.log('image preprocess - ' + data);
-                processedFilename = data;
-                $(".postupload .js-image").attr("src", uploadsFolder + data);
-                $('.js-toggle-original').show();
-                
-                if(operations.segmentation) //do next thing
-                {
-                    data = "filename=" + filename + "&operation=segmentation";
-                    return promiseApplyToImageCall(data);
-                }
-            })
-            .then(data => {
+            //TO DO - image segmentation happened, manipulate the DOM
+            console.log('image segment - ' + data);
 
-                //TO DO - image segmentation happened, manipulate the DOM
-                console.log('image segment - ' + data);
-    
-                if(operations.recognition) //do next thing
-                {
-                    data = "filename=" + filename + "&operation=recognition";
-                    return promiseApplyToImageCall(data);
-                }
-            })
-            .then(data => {
-               
-                //TO DO - text recognition happened, manipulate the DOM
-                console.log('image text rec - ' + data);
-    
-            })
-            .catch(data => {
-                console.log(data);
+            return promiseApplyToImageCall(operations.recognition, callArgs + "recognition");
+        })
+        .then(data => {
+           
+            //TO DO - text recognition happened, manipulate the DOM
+            console.log('image text rec - ' + data);
+
+        })
+        .catch(data => {
+            if(data != 'stop')
                 showNotif(data);
-            });
-        }
-        else
-            console.log('Image preprocessing not Selected');
+        });
     });
 	
 });
 
-function promiseApplyToImageCall(data)
+function promiseApplyToImageCall(willCall, data)
 {
     const promise = new Promise(function(resolve, reject) {
-        let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
-            resolve(data);
+    
+        if(willCall)
+        {
+            let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
+                resolve(data);
+            }
+    
+            let error = (data) => {
+                reject(data);
+            }
+    
+            callAjax("GET", "/image", data, success, error);
         }
-
-        let error = (data) => {
-            reject(data);
+        else
+        {
+            reject('stop');
         }
-
-        callAjax("GET", "/image", data, success, error);
     });
 
     return promise;

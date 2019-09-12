@@ -68,27 +68,27 @@ class CCL:
         self.relabelPoints()
     
     def labelPoint(self):
-        # print('#labelPoint')
         nbrLbls = set()
         
-        if self.y > 0:
-            label = self.labels[self.x][self.y-1]
-            nbrLbls.add(label)
-        if self.x > 0:
-            label = self.labels[self.x-1][self.y]
-            nbrLbls.add(label)
-            if self.y > 0:
-                label = self.labels[self.x-1][self.y-1]
-                nbrLbls.add(label)
-            if self.y < self.w-1:
-                label = self.labels[self.x-1][self.y+1]
-                nbrLbls.add(label)
+        for x in range(self.x-2, self.x):
+            for y in range(self.y-2, self.y+2):
+                if not (x == self.x and y == self.y):
+                    if x > -1 and y > -1 and y < self.w:
+                        label = self.labels[x][y]
+                        nbrLbls.add(label)
         
         nbrLbls = {label for label in nbrLbls if label >= 0}
         if len(nbrLbls) > 0:
             self.labels[self.x][self.y] = next(iter(nbrLbls))
+            
+            neighborSet = set()
             for i in nbrLbls:
-                self.eqClasses[i] = self.eqClasses[i].union(nbrLbls)
+                neighborSet = neighborSet.union(self.eqClasses[i])
+            
+            neighborSet = neighborSet.union(nbrLbls)
+            
+            for i in neighborSet:
+                self.eqClasses[i] = neighborSet
         else:
             self.labels[self.x][self.y] = self.currLabel
             self.eqClasses.insert(self.currLabel, {self.currLabel});
@@ -96,13 +96,16 @@ class CCL:
 
     def relabelPoints(self):
         timeElapsed = time.time()
-        self.eqClasses = list(map(minimizer, self.eqClasses))
-        self.eqClasses.append(-1)
         
-        self.regions = [Region(self.h, self.w, i) for i in set(self.eqClasses)]
-        regLbls = [reg.label for reg in self.regions]
+        self.eqClassesHat = list(map(minimizer, self.eqClasses))
+        self.eqClassesHatSingles = list(dict.fromkeys(self.eqClassesHat))
         
-        self.labels = [[self.regions[regLbls.index(self.eqClasses[self.labels[i][j]])].addPoint(i,j) 
+        self.eqClassesHat.append(-1)
+        self.eqClassesHatSingles.append(-1)
+        
+        self.regions = [Region(self.h, self.w, i) for i in self.eqClassesHatSingles]
+        
+        self.labels = [[self.regions[self.eqClassesHatSingles.index(self.eqClassesHat[self.labels[i][j]])].addPoint(i,j) 
                         for j in range(self.w) if self.labels[i][j] != -1] for i in range(self.h)]
         
         self.regions = [reg for reg in self.regions if reg.area > 10]
@@ -110,7 +113,7 @@ class CCL:
         timeElapsed = time.time() - timeElapsed
         print('Relabel Points - ', timeElapsed)
         
-#        self.saveRegions()
+        self.saveRegions()
                 
     def saveRegions(self):
         mean = sum(self.regions)/len(self.regions)
