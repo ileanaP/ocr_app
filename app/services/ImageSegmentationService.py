@@ -31,9 +31,13 @@ class Region:
         self.imgW = w
         self.h = 0
         self.w = 0
+        self.ratio = 0
         
         self.bigOutlier = False   # used to determine wether a region is too big, or has more letters
         self.smallOutlier = False # same as above, only for small regions
+        self.ratioBigOutlier = False
+        self.ratioSmallOutlier = False
+        self.isDot = False
         
         self.area = 0
         
@@ -57,19 +61,27 @@ class Region:
     def isEligible(self):
         returnValue = 1
         
-        returnValue = returnValue and not self.area == 0
+        returnValue = returnValue and not self.area < 7
         returnValue = returnValue and not self.isMargin() # scot outlierii mari si pixeli razleti
         
         return returnValue
         
     def calculateRatio(self):
-        self.h = self.S - self.N
-        self.w = self.E - self.W
+        self.h = self.S - self.N + 1
+        self.w = self.E - self.W + 1
         
         self.ratio = float(self.w)/float(self.h)
         
         return self.ratio
+    
+    def join(self, reg):
+        self.area = self.area + reg.area
         
+        self.N = min(self.N, reg.N)
+        self.S = max(self.S, reg.S)
+        self.W = min(self.W, reg.W)
+        self.E = max(self.E, reg.E)
+
     def cropImg(self, mask):        
         self.cropped = mask[self.N:self.S+1, self.W:self.E+1]
         self.cropped = [[255 if value == self.label else 0 for value in row ] for row in self.cropped]
@@ -79,17 +91,29 @@ class Region:
         
         fileName = str(self.area) + '_' + str(self.label)
         
-        if self.bigOutlier:
-            fileName = fileName + "_bigoutlier"
-        
-        if self.smallOutlier:
-            fileName = fileName + "_smalloutlier"
-
-        if self.isMargin():
-            fileName = fileName + "_margin"
-                
-        fileName = fileName + ".png"
+#        if self.bigOutlier:
+#            fileName = fileName + "_AreaOutlier"
+#        if self.ratioBigOutlier:
+#            fileName = fileName + "_RatioBigOutlier"
+#        if self.smallOutlier:
+#            fileName = fileName + "_AreaOutlier"            
+#        if self.ratioSmallOutlier:
+#            fileName = fileName + "_RatioSmallOutlier"
+#        if self.isMargin():
+#            fileName = fileName + "_margin"
             
+        if self.isDot:
+            fileName = fileName + "_dot"
+                
+        fileName = fileName + "N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
+        
+#        if self.area == 235:
+#            print("N: ", self.N)
+#            print("S: ", self.S)
+#            print("W: ", self.W)
+#            print("E: ", self.E)
+#            sys.exit()
+        
         scipy.misc.imsave('cropped/' + fileName, self.cropped)
 #        print(str(self.area) + '_' + str(self.label) + '.png', end=', ')
 
@@ -104,8 +128,8 @@ class CCL:
         self.h, self.w = self.image.shape
         self.labels = [[-1 for i in range(0,self.w)] for j in range(0, self.h)]
         
-        self.mask = np.zeros([self.h,self.w],dtype=np.uint32)
-        self.mask.fill(255)
+        self.mask = np.zeros([self.h,self.w],dtype=np.int32)
+        self.mask.fill(-1)
         
         self.eqClasses = []
         self.currLabel = 0;
@@ -181,12 +205,12 @@ class CCL:
         # daca dintre outlierii mari sunt linii orizontale __ sau verticale | care nu sunt margini? 
         # --- scot liniile | si liniile __ devin "_ _ _ _" in textul final (SD a ratio)
         
+        for reg in self.regions:
+            reg.calculateRatio()
         
         regionAreas = [reg.area for reg in self.regions]
         
-        areaMean = int(sum(regionAreas) / len(regionAreas))
-        areaStDev = statistics.pstdev(regionAreas) # standard deviation
-        
+        areaMean, areaStDev = self.getMeanStDev(regionAreas)        
         print('area mean: ', areaMean)
         print('area st dev: ', areaStDev)
         
@@ -195,6 +219,66 @@ class CCL:
                 reg.bigOutlier = True
             if reg.area < areaMean - areaStDev:
                 reg.smallOutlier = True
+
+        regionRatios = [reg.calculateRatio() for reg in self.regions]
+        
+        ratioMean, ratioStDev = self.getMeanStDev(regionRatios)        
+        print('ratio mean: ', ratioMean)
+        print('ratio st dev: ', ratioStDev)
+        
+#        regLabels = [reg.label for reg in self.regions]
+#        print(regLabels)
+#        sys.exit()
+        
+        self.regionsToRemove = []
+        self.regionsMerged = []
+        
+        for reg in self.regions:
+            if reg not in self.regionsToRemove and reg not in self.regionsMerged:            
+                if reg.ratio > ratioMean + ratioStDev:
+                    reg.ratioBigOutlier = True
+                if reg.ratio < ratioMean - ratioStDev:
+                    reg.ratioSmallOutlier = True
+                if reg.ratio >= 0.7 and reg.ratio <= 1.3 and reg.smallOutlier:
+                    reg.isDot = True
+                if reg.isDot:
+                    self.tryFindRegionParent(reg)
+        
+#        for reg in self.regionsToRemove:
+#            self.regions.remove(reg)
+        
+    def tryFindRegionParent(self, reg):
+        if reg.isDot:
+            areaH = reg.h * 4
+            
+            tempCropped = self.mask[reg.N + reg.h:reg.N+areaH+1, reg.W:reg.E+1]                
+                
+            tempCroppedArray = np.unique(np.asarray(tempCropped))
+            
+            print("###")
+            print(tempCroppedArray)
+            print(tempCroppedArray.shape)
+            print("###")
+                  
+            tempCroppedArray = [tmp for tmp in tempCroppedArray if tmp != -1]
+            
+            if len(tempCroppedArray) == 1:
+                desiredLabel = tempCroppedArray[0]
+                print("~~", desiredLabel, "~~")
+                desiredRegion = [x for x in self.regions if x.label == desiredLabel][0]
+#                desiredRegion = desiredRegion
+                    
+                self.mask[self.mask == reg.label] = desiredRegion.label
+                desiredRegion.join(reg)
+                    
+                self.regionsToRemove.append(reg)
+                self.regionsMerged.append(reg)
+        
+    def getMeanStDev(self, elems):
+        mean = int(sum(elems) / len(elems))
+        stDev = statistics.pstdev(elems) # standard deviation
+        
+        return mean, stDev
         
     def addPoint(self, i, j):        
         currLabelHat = self.eqClassesHat[self.labels[i][j]]
@@ -204,15 +288,8 @@ class CCL:
         
         self.mask.itemset((i,j),currLabelHat)
                 
-    def saveRegions(self):
-#        mean = sum(self.regions)/len(self.regions)
-#        errLow = int(mean - mean/2)
-        
-#        print(self.mask)
-#        sys.exit()
-        
+    def saveRegions(self):        
         for region in self.regions:
-#            if region.area > errLow:
             region.cropImg(self.mask)
                 
-thisCCL = CCL("ccl_image_01.jpg")
+thisCCL = CCL("ccl_image_03.jpg")
