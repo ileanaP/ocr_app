@@ -15,6 +15,8 @@ Created on Sun Mar 24 13:32:52 2019
 @author: ILENUCA
 """
 
+imageToRead = "ccl_image_03.jpg"
+
 import numpy as np
 import cv2
 import sys
@@ -24,18 +26,41 @@ import scipy.misc
 
 minimizer = lambda x: min(x)
 
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class Line:
+    def __init__(self, regions):
+        self.regions = regions
+        self.N, self.S = 0, 0
+        self.symbol = 0
+        
+        self.__setCoords()
+        self.__setIsSymbol()
+    
+    def __setCoords(self):
+        self.N = min([reg.N for reg in self.regions])
+        self.S = max([reg.S for reg in self.regions])
+        
+    def __setIsSymbol(self):
+        
+        symbolsNr = len([reg for reg in self.regions if reg.out["densityOver"]])
+        
+        print("####")
+        print("symbolsNr: ", symbolsNr)
+        print("allNr: ", len(self.regions))
+        
+        self.symbol = True if symbolsNr/len(self.regions) > 0.7 else False
+        
 class Region:
     def __init__(self, h, w, label):
         self.label = label
         self.imgH = h
         self.imgW = w
-        self.h = 0
-        self.w = 0
-        self.ratio = 0
-        self.density = 0
-        self.area = 0
         
-        self.line = -1
+        self.h, self.w, self.area, self.ratio, self.density, self.line = 0, 0, 0, 0, 0, 0
         
 #        self.splitVal = 0
 #        self.isNormalRatioOver = False
@@ -54,7 +79,6 @@ class Region:
         self.E = 0 #biggest column
         
     def addPoint(self, x, y):
-#        self.mask.itemset((x,y),0);
         self.area += 1
         
         self.N = min(self.N, x)
@@ -76,14 +100,7 @@ class Region:
     def calculateRatio(self):
         self.h = self.S - self.N + 1
         self.w = self.E - self.W + 1
-        
-#        if self.area == 501:
-#            print("willl calculate ratio")
-#            print("~~~~~~~")
-#            print("width: ", self.w)
-#            print("height: ", self.h)
-#            self.ratio = float(self.w)/float(self.h)
-#            print("unexpected result: ", self.ratio)
+
         self.ratio = float(self.w)/float(self.h)
         
         return self.ratio
@@ -91,6 +108,14 @@ class Region:
     def calculateDensity(self):
         if self.area != 0:
             totalArea = (self.S - self.N) * (self.E - self.W)
+            
+            if totalArea == 0:
+                print("N: ", self.N)
+                print("S: ", self.S)
+                print("W: ", self.W)
+                print("E: ", self.E)
+                sys.exit()
+                
             self.density = self.area/totalArea
             
         return self.density
@@ -136,14 +161,14 @@ class Region:
 #            fileName = fileName + "_RO"
 #        if self.out["ratioUnder"]:
 #            fileName = fileName + "_RU"
-#        if self.out["densityOver"]:
-#            fileName = fileName + "_DO"
-#        if self.out["densityUnder"]:
-#            fileName = fileName + "_DU"
+        if self.out["densityOver"]:
+            fileName = fileName + "_DO"
+        if self.out["densityUnder"]:
+            fileName = fileName + "_DU"
 #        if self.isMargin():
 #            fileName = fileName + "_M"
                 
-#        fileName = fileName + "N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
+        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
         fileName = fileName + ".png"
         
 #        if self.area == 235:
@@ -170,12 +195,16 @@ class CCL:
         self.foreground = [level < 124 for level in self.image]
         
         self.h, self.w = self.image.shape
-        self.labels = [[-1 for i in range(0,self.w)] for j in range(0, self.h)]
+#        self.labels = [[-1 for i in range(0,self.w)] for j in range(0, self.h)]
+        
+        self.labels = np.zeros([self.h,self.w],dtype=np.int32)
+        self.labels.fill(-1)
         
         self.mask = np.zeros([self.h,self.w],dtype=np.int32)
         self.mask.fill(-1)
         
         self.eqClasses = []
+        self.etiquete = []
         self.currLabel = 0;
         self.x, self.y = 0, 0 #initial point from where we start traversing the image
         
@@ -187,7 +216,7 @@ class CCL:
                 if self.foreground[self.x][self.y]:
                     self.labelPoint()
         timeElapsed = time.time() - timeElapsed
-        print('Label Points - ', timeElapsed)
+        print('Label Points Better - ', timeElapsed)
         
         self.relabelPoints()
         self.findOutliers()
@@ -268,36 +297,65 @@ class CCL:
         # -- gasesc mean width in functie de Mean Normal Ratio a elems care nu sunt symbols (setSomeRatio), si mean height:
         #    mW = mNR * mH
         # (ar fi bine ca din preprocesare liniile sa nu fie sloped - AR FI XD)
-        self.assignLines()
+        # +++ sa gasesc cuvintele din fiecare linie :D <3
+        self.setLines()
         
-    def assignLines(self):
-        currLine = 0
-        
+    def setLines(self):
+        currLine = 1
+       
         for reg in self.regions:
-            # gasesc clase de echivalenta de neighbors pe orizontala
-            # regions cu aceeasi clasa de echivalenta de neighbors sunt pe aceeasi linie
-            neighbors = self.getNeighborRegions(reg)
-            
-            neighborLines = [neighbor.line for neighbor in neighbors if neighbor.line != -1]
-            
-            if len(neighborLines) == 0:
-                for neighbor in neighbors:
-                    neighbor.line = currLine
-                reg.line = currLine
-                currLine = currLine + 1
+            if reg.line == 0:
+                neighbors = self.getNeighborRegions(reg)
+                
+                neighborLines = [neighbor.line for neighbor in neighbors if neighbor.line != 0]
+                
+                if len(neighborLines) == 0:
+                    for neighbor in neighbors:
+                        neighbor.line = currLine
+                    reg.line = currLine
+                    currLine = currLine + 1
+                else:
+                    reg.line = min(neighborLines)
+                    for neighbor in neighbors:
+                        neighbor.line = reg.line
+                        
+        allLines = [reg.line for reg in self.regions]
+        
+        allLines = np.unique(np.asarray(allLines))
+        
+        self.lines = [Line([reg for reg in self.regions if reg.line == i]) for i in allLines]
+
+        tempimage = cv2.imread(imageToRead)
+        
+        for line in self.lines:            
+            lineThickness = 2
+            if line.symbol:
+                lineColor = (255,0,125)
             else:
-                reg.line = min(neighborLines)
-                for neighbor in neighbors:
-                    neighbor.line = reg.line
+                lineColor = (125,0,255)
+
+            cv2.line(tempimage, (0, line.N), (self.w, line.N), lineColor, lineThickness)
+            cv2.line(tempimage, (0, line.S), (self.w, line.S), lineColor, lineThickness)
+            
+        cv2.imshow('image',tempimage)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        cv2.imwrite('scannedimage.jpg', tempimage)
+        sys.exit()
 
     def getNeighborRegions(self, reg):
-        # TO DO - neighbors pe orizontala a lui reg
-        neighbors = self.regions[0]
         
+        regionMiddle = reg.N + int((reg.S - reg.N)/2)
+        
+        neighborLabels = self.mask[regionMiddle:regionMiddle+1,]
+        
+        neighbors = [r for r in self.regions if (r.label in neighborLabels and r.label != -1 )]        
+
         return neighbors
         
         
-    def removeSlope():
+    def removeSlope(self):
         minN = min([reg.N for reg in self.regions])
         maxS = max([reg.S for reg in self.regions])
         minW = min([reg.W for reg in self.regions])
@@ -327,10 +385,7 @@ class CCL:
                 reg.wipe()
                 
                 desiredRegion.setOutliers(self.area, self.ratio, self.density)
-                reg.setOutliers(self.area, self.ratio, self.density)
-                
-    def assignLines(self):
-        
+                reg.setOutliers(self.area, self.ratio, self.density)        
         
                 
 #    def setSomeRatio(self):
@@ -394,4 +449,4 @@ class CCL:
         for region in self.regions:
             region.cropImg(self.mask)
                 
-thisCCL = CCL("ccl_image_02.jpg")
+thisCCL = CCL(imageToRead)
