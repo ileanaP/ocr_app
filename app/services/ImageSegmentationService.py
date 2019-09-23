@@ -19,315 +19,13 @@ imageToRead = "ccl_image_03.jpg"
 
 import numpy as np
 import cv2
-import sys
 import time
-import statistics
 import math
-import scipy.misc
+import Util
+import Line
+import Region
 
-minimizer = lambda x: min(x)
-
-def sortByPosition(reg1, reg2):
-    returnValue = 0
-    
-    if reg1.W < reg2.W:
-        returnValue = -1
-    if reg1.W > reg2.W:
-        returnValue =1 
-    
-    return returnValue
-
-class Util:
-    @staticmethod
-    def getMeanStDev(elems):
-        mean = sum(elems) / len(elems)
-        stDev = statistics.pstdev(elems) # standard deviation
-        
-        return { 'm': mean, 'sd': stDev }
-
-class Word:
-    def __init__(self):
-        self.regions = []
-        self.N, self.S, self.W, self.E = 0, 0, 0, 0
-        
-    def add(self, region):
-        self.regions.append(region)
-        
-    def setBoundaries(self):
-        self.N = min([reg.N for reg in self.regions])
-        self.S = max([reg.S for reg in self.regions])
-        self.W = min([reg.W for reg in self.regions])
-        self.E = max([reg.E for reg in self.regions])
-
-class Line:
-    N, S, W, E = 0, 0, 0, 0
-    def __init__(self, regions):
-        self.regions = regions
-        self.N, self.S, self.W, self.E = 0, 0, 0, 0
-        self.symbol = 0
-        self.outlier = False
-        
-        self.__setCoords()
-        self.__setIsSymbol()
-    
-    def __setCoords(self):
-        self.N = min([reg.N for reg in self.regions])
-        self.S = max([reg.S for reg in self.regions])
-        
-    def __setIsSymbol(self):
-        
-        symbolsNr = len([reg for reg in self.regions if reg.out["densityOver"]])        
-        self.symbol = True if symbolsNr/len(self.regions) > 0.7 else False
-        
-    def sortWestEast(self): #sort regions from left to right
-        self.regions.sort(key=lambda b: b.getWest())
-        
-    def findWords(self):
-        # TO DO - ar fi mai ok sa caut pe verticala dupa line height 
-        self.sortWestEast()
-        
-        word = Word()
-        self.words = []
-        
-        for i in range(len(self.regions)):
-            word.add(self.regions[i])
-            if i < len(self.regions)-1 and self.regions[i+1].isNear(self.regions[i]):
-                continue
-            else:
-                self.words.append(word)
-                word = Word()
-             
-        if len(word.regions) > 0:
-            self.words.append(word)
-            
-    def setWordBoundaries(self):
-        tmp = [word.setBoundaries() for word in self.words]
-            
-    def mergeSplitRegions(self):
-        self.sortWestEast()
-        
-        for i in range(len(self.regions) - 1):
-            diff = self.regions[i+1].W - self.regions[i].E
-            if diff <= 0:
-                if self.regions[i].S < self.regions[i+1].N or self.regions[i+1].S < self.regions[i].N:
-                    self.regions[i+1].join(self.regions[i])
-                    i = i + 1
-        
-        self.regions = [reg for reg in self.regions if reg.N != 0]
-
-        return 1
-
-
-    @classmethod
-    def setBoundaries(cls, lines):
-        for line in lines:  
-            line.N = min([x.N for x in line.regions])
-            line.S = max([x.S for x in line.regions])
-            line.W = min([x.W for x in line.regions])
-            line.E = max([x.E for x in line.regions])
-            
-        cls.N = min([line.N for line in lines])
-        cls.S = max([line.S for line in lines])
-        cls.W = min([line.W for line in lines])
-        cls.E = max([line.E for line in lines])
-        
-    @staticmethod
-    def setIsSymbol(lines):
-        tmp = [line.mergeSplitRegions() for line in lines]
-
-        for line in lines:
-            line.findWords()
-            line.setWordBoundaries()
-        
-        #try to find outliers by number of regions in line
-        nrRegs = [len(line.regions) for line in lines]
-        nrRegs = Util.getMeanStDev(nrRegs)
-        
-        outlierLines = [line for line in lines if (len(line.regions) > nrRegs['m']+nrRegs['sd']) and len(line.words) == 1]
-        
-        for line in outlierLines:
-            line.symbol = True
-        
-class Region:
-    areaMSD    = 0
-    ratioMSD   = 0
-    densityMSD = 0
-    def __init__(self, h, w, label):
-        self.label = label
-        self.imgH = h
-        self.imgW = w
-        
-        self.h, self.w, self.area, self.ratio, self.density, self.line = 0, 0, 0, 0, 0, 0
-        
-        self.out = {
-                    "areaOver"    : False, "areaUnder"    : False, # used to determine wether a region is too big, or has more letters
-                    "ratioOver"   : False, "ratioUnder"   : False, # same as above, only for small regions
-                    "densityOver" : False, "densityUnder" : False, 
-                    "dot"         : False
-                   }
-        
-        self.N = h # NORTH - smallest row in the list of points
-        self.S = 0 # SOUTH - biggestt row
-        self.W = w # WEST  - smallest column in the list of points
-        self.E = 0 # EAST  - biggest column
-     
-    @classmethod
-    def setMetric(cls, area, ratio, density):
-        cls.areaMSD = area
-        cls.ratioMSD = ratio
-        cls.densityMSD = density
-        
-    def addPoint(self, x, y):
-        self.area += 1
-        
-        self.N = min(self.N, x)
-        self.S = max(self.S, x)
-        self.W = min(self.W, y)
-        self.E = max(self.E, y)
-        
-    def getWest(self):
-        return self.W
-    
-    def isMargin(self):
-        return self.N == 0 or self.S == self.imgH - 1 or self.W == 0 or self.E == self.imgW - 1
-    
-    def isEligible(self):
-        returnValue = 1
-        
-        returnValue = returnValue and not self.area < 7
-        returnValue = returnValue and not self.isMargin() # scot outlierii mari si pixeli razleti
-        
-        return returnValue
-        
-    def calculateRatio(self):
-        self.h = self.S - self.N + 1
-        self.w = self.E - self.W + 1
-
-        self.ratio = float(self.w)/float(self.h)
-        
-        return self.ratio
-    
-    def calculateDensity(self):
-        if self.area != 0:
-            totalArea = (self.S - self.N) * (self.E - self.W)
-            
-            if totalArea == 0:
-                print("N: ", self.N)
-                print("S: ", self.S)
-                print("W: ", self.W)
-                print("E: ", self.E)
-                sys.exit()
-                
-            self.density = self.area/totalArea
-            
-        return self.density
-    
-    def join(self, reg):
-        self.area = self.area + reg.area
-        
-        self.N = min(self.N, reg.N)
-        self.S = max(self.S, reg.S)
-        self.W = min(self.W, reg.W)
-        self.E = max(self.E, reg.E)
-        
-#        print("_____")
-#        self.printCoords()
-#        print("=====")
-        
-        reg.wipe()
-        
-        self.setOutliers()
-        reg.setOutliers()
-        
-    def wipe(self):
-        self.area = 0
-        
-        self.N, self.S, self.W, self.E = 0, 0, 0, 0
-        
-    def setOutliers(self):        
-        self.calculateRatio()
-        
-        self.out['areaOver']     = True if self.area    > self.areaMSD['m']    + self.areaMSD['sd']    else False
-        self.out['areaUnder']    = True if self.area    < self.areaMSD['m']    - self.areaMSD['sd']    else False
-        self.out['ratioOver']    = True if self.ratio   > self.ratioMSD['m']   + self.ratioMSD['sd']   else False
-        self.out['ratioUnder']   = True if self.ratio   < self.ratioMSD['m']   - self.ratioMSD['sd']   else False
-        self.out['densityOver']  = True if self.density > self.densityMSD['m'] + self.densityMSD['sd'] else False
-        self.out['densityUnder'] = True if self.density < self.densityMSD['m'] - self.densityMSD['sd'] else False
-            
-        self.out['dot'] = False
-        
-        if self.ratio >= 0.6 and self.ratio <= 1.4:
-            if self.out['areaUnder'] or self.out['densityOver']: # TO DO - am adaugat aici "densityOver"
-                self.out['dot'] = True                           # pentru a rezolva ca in _02 nu se grupau ":" pentru ca unul din ei
-                                                                 # nu era dot - modifica asta ceva la rezultatele de pana acum?
-                                                                 # (de ex. pt ",")
-                                                                 
-#        if self.N == 67 and self.S == 72:
-#            print("==")
-#            print("area under: ", self.out["areaUnder"])
-#            print("density over: ", self.out["densityOver"])
-#            print("ratio: ", self.ratio)
-#            sys.exit()
-            
-    def getSplitRegions(self, meanWidth, mask, currLabel):
-        
-        regions = []
-        
-        if self.out["ratioOver"] and not (self.out["areaUnder"] or self.out["densityOver"]):
-            nrSplit = int(round(self.w/meanWidth))
-            nrSplit = float((self.w - (nrSplit-1)*2))/meanWidth
-            nrSplit = math.floor(nrSplit) # floor - pentru a nu lua mai multe elems decat e necesar (cum ar putea fi cazul la "ceil")
-            
-            if nrSplit > 1:
-                regions, currLabel = self.split(nrSplit, mask, currLabel)
-                
-        return regions, currLabel
-    
-    def isNear(self, reg):
-        if self.W >= reg.E and self.W <= reg.E + (reg.E - reg.W):
-            return True
-        else:
-            return False
-    
-    def printCoords(self):
-        print("N: ", self.N)
-        print("S: ", self.S)
-        print("W: ", self.W)
-        print("E: ", self.E)
-        
-    def split(self, nrSplit, mask, lastLabel):
-        newRegions = []
-        splitWidth = int(self.w/nrSplit)
-        
-        for i in range(nrSplit):
-            currLabel = lastLabel + i
-            region = Region(self.imgH, self.imgW, currLabel)
-            for y in range(self.W + splitWidth * i, self.W + splitWidth *(i+1)):
-                for x in range(self.N, self.S):
-                    if mask[x][y] == self.label:
-                        region.addPoint(x,y)
-                        mask.itemset((x,y), currLabel)
-                        
-            newRegions.append(region)
-            
-        return newRegions, currLabel + 1
-            
-
-    def cropImg(self, mask):        
-        self.cropped = mask[self.N:self.S+1, self.W:self.E+1]
-        self.cropped = [[255 if value == self.label else 0 for value in row ] for row in self.cropped]
-        self.cropped = np.asarray(self.cropped, dtype=np.int8)
-
-        height, width = self.cropped.shape
-        
-        fileName = str(self.area) + '_' + str(self.label)
-                
-#        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
-        fileName = fileName + ".png"
-        
-        scipy.misc.imsave('cropped/' + fileName, self.cropped)
-
-class CCL:
+class ImageSegmentationService:
     def __init__(self, filename):
         self.iter = 0
         self.image = cv2.imread(filename)        
@@ -357,7 +55,7 @@ class CCL:
                 if self.foreground[self.x][self.y]:
                     self.labelPoint()
         timeElapsed = time.time() - timeElapsed
-        print('Label Points Better - ', timeElapsed)
+        print('# labelPoints() - ', timeElapsed)
         
         self.relabelPoints()
         self.findOutliers()
@@ -393,7 +91,7 @@ class CCL:
     def relabelPoints(self):
         timeElapsed = time.time()
         
-        self.eqClassesHat = list(map(minimizer, self.eqClasses))
+        self.eqClassesHat = list(map(Util.minimizer, self.eqClasses))
         self.eqClassesHatSingles = list(dict.fromkeys(self.eqClassesHat))
         
         self.eqClassesHat.append(-1)
@@ -407,7 +105,7 @@ class CCL:
         self.regions = [reg for reg in self.regions if reg.isEligible()]
         
         timeElapsed = time.time() - timeElapsed
-        print('Relabel Points - ', timeElapsed)
+        print('# relabelPoints() - ', timeElapsed)
         
     def findOutliers(self):
         self.setMetric()
@@ -480,7 +178,6 @@ class CCL:
 #            tmpColor = (0,0,255)
 #            if line.symbol:
 #                tmpColor = (125,125,125)
-#                print("__", len(line.words),"__")
 #            tempimage = cv2.rectangle(tempimage,(line.W,line.N),(line.E,line.S),tmpColor,2)
 #            
 #        tempimage = cv2.rectangle(tempimage,(Line.W,Line.N),(Line.E,Line.S),(255,0,0),3)
@@ -572,15 +269,6 @@ class CCL:
         
         for reg in self.regions:
             reg.setOutliers()
-        
-        print("~~~~")
-        print("area Mean: ", self.area['m'])
-        print("area SD: ", self.area['sd'])
-        print("ratio Mean: ", self.ratio['m'])
-        print("ratio SD: ", self.ratio['sd'])
-        print("density Mean: ", self.density['m'])
-        print("density SD: ", self.density['sd'])
-        print("~~~~")
         
     def addPoint(self, i, j):        
         currLabelHat = self.eqClassesHat[self.labels[i][j]]
