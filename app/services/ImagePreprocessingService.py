@@ -97,10 +97,10 @@ class ImagePreprocessingService:
         maxContour = self.contours[cAreas.index(max(cAreas))]
         
         if self.isCV3():
-            minX = maxContour[maxContour[:, :, 0].argmin()][0][0]
-            maxX = maxContour[maxContour[:, :, 0].argmax()][0][0]
-            minY = maxContour[maxContour[:, :, 1].argmin()][0][1]
-            maxY = maxContour[maxContour[:, :, 1].argmax()][0][1]
+            minX = maxContour[maxContour[:, :, 0].argmin()][0][0] + 50
+            maxX = maxContour[maxContour[:, :, 0].argmax()][0][0] - 50
+            minY = maxContour[maxContour[:, :, 1].argmin()][0][1] + 50
+            maxY = maxContour[maxContour[:, :, 1].argmax()][0][1] - 50
         else:
             if self.isCV4():
                 temp = int(maxContour[:, :, 0].argmin())
