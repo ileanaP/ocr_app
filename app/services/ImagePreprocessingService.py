@@ -104,16 +104,16 @@ class ImagePreprocessingService:
         else:
             if self.isCV4():
                 temp = int(maxContour[:, :, 0].argmin())
-                minX = maxContour[temp][0][0]
+                minX = maxContour[temp][0][0] + 50
                 
                 temp = int(maxContour[:, :, 0].argmax())
-                maxX = maxContour[temp][0][0]
+                maxX = maxContour[temp][0][0] - 50
                 
                 temp = maxContour[:, :, 1].argmin()
-                minY = maxContour[temp][0][1]
+                minY = maxContour[temp][0][1] + 50
                 
                 temp = maxContour[:, :, 1].argmax()
-                maxY = maxContour[temp][0][1]
+                maxY = maxContour[temp][0][1] - 50
             
         topLeft = np.array([np.array([minX, minY])])
         topRight = np.array([np.array([minX, maxY])])

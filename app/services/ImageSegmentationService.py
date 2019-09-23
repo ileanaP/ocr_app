@@ -102,7 +102,7 @@ class ImageSegmentationService:
         self.labels = [[self.addPoint(i,j) 
                         for j in range(self.w) if self.labels[i][j] != -1] for i in range(self.h)]
 
-        self.regions = [reg for reg in self.regions if reg.isEligible()]
+        self.removeNotEligible()
         
         timeElapsed = time.time() - timeElapsed
         print('# relabelPoints() - ', timeElapsed)
@@ -114,7 +114,7 @@ class ImageSegmentationService:
             if reg.out["dot"]:
                 self.tryFindRegionParent(reg)
         
-        self.regions = [reg for reg in self.regions if reg.isEligible()]
+        self.removeNotEligible()
         
         self.setMetric()
         
@@ -122,6 +122,13 @@ class ImageSegmentationService:
         self.otherThanSetLines()
         self.show()
         # TO DO - pentru 02, ia "Birne" ca un sg. cuvant
+        
+    def removeNotEligible(self):
+        regionsToRemove = [reg for reg in self.regions if not reg.isEligible()]
+        
+        for reg in regionsToRemove:
+            self.mask[self.mask == reg.label] = -1
+            self.regions.remove(reg)
         
     def setLines(self):
         currLine = 1
