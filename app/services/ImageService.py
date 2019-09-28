@@ -12,8 +12,9 @@ from app.services.ImageSegmentationService import ImageSegmentationService
 #from app.services.ImageSegmentationService import ImageSegmentationService
 
 class ImageService:
-    def __init__(self, filename): #s-ar putea ca filename sa fie NONE
+    def __init__(self, filename, kargs): #s-ar putea ca filename sa fie NONE
         self.filename = filename
+        self.kargs = kargs
         self.filePath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         self.operator = None
         
@@ -33,7 +34,7 @@ class ImageService:
                 
         elif operation == 'segmentation':
             
-            self.operator = ImageSegmentationService(self.filename, self.targetFilePath) # sa ma folosesc de filePath            
+            self.operator = ImageSegmentationService(self.filename, self.targetFilePath, self.kargs) # sa ma folosesc de filePath            
             self.operator.apply()
             
             if self.operator.processed:

@@ -18,22 +18,27 @@ Created on Sun Mar 24 13:32:52 2019
 imageToRead = "ccl_image_03.jpg"
 
 from app import app
+import sys
+import os
 import numpy as np
 import cv2
 import time
 import math
+import json
 from app.services.Util import Util
 from app.services.Line import Line
 from app.services.Region import Region
 
 class ImageSegmentationService:
-    def __init__(self, filename, filePath):
+    def __init__(self, filename, filePath, kargs):
         self.filename = filename
         self.filePath = filePath
         self.eqClasses = []
         self.etiquete = []
         self.currLabel = 0;
         
+        self.kargs = json.loads(kargs)
+
         self.processed = 0
         
     def apply(self):
@@ -65,8 +70,7 @@ class ImageSegmentationService:
         Line.setBoundaries(self.lines)
         Line.setIsSymbol(self.lines, self.mask)
         
-        self.saveRegions()
-#        self.show()
+        self.show()
         
         self.processed = 1
         return
@@ -187,10 +191,15 @@ class ImageSegmentationService:
         self.mask[self.mask == reg2.label] = reg1.label
         reg1.join(reg2)
         
-    def show(self, showLines, showWords, showRegions, showLineBoundaries, showBigFrame):
-        tempimage = cv2.imread(imageToRead)
+    def show(self):
+        # TO DO - sa pun coordonatele dreptunghiurilor intr-un JSON, si sa le desenez din JS
+        print("show - no beginning")
+        tempimage = cv2.imread(self.filePath)
+        
+        if self.kargs["cropped"]:
+            self.saveRegions()
 
-        if showLines:    
+        if self.kargs["lines"]:    
             for line in self.lines:
                 lineThickness = 2
                 lineColor = (192,192,192)
@@ -198,28 +207,28 @@ class ImageSegmentationService:
                 cv2.line(tempimage, (0, line.N), (self.w, line.N), lineColor, lineThickness)
                 cv2.line(tempimage, (0, line.S), (self.w, line.S), lineColor, lineThickness)
         
-        if showWords:
+        if self.kargs["words"]:
             for line in self.lines:
                 for word in line.words:
                     tempimage = cv2.rectangle(tempimage,(word.W,word.N+1),(word.E,word.S+1),(0,128,0),lineThickness)
                 
-        if showRegions:
+        if self.kargs["regions"]:
             for line in self.lines:
                 for reg in line.regions:
-                    tempimage = cv2.rectangle(tempimage,(reg.W,reg.N+1),(reg.E,reg.S+1),(34,34,178), 1)
+                    tempimage = cv2.rectangle(tempimage,(reg.W,reg.N+1),(reg.E,reg.S+1),(34,34,178), 2)
         
-        if showLineBoundaries:
+        if self.kargs["boundaries"]:
             for line in self.lines:
                 tmpColor = (112,128,144)
                 if line.symbol:
                     tmpColor = (220,220,220)
                 tempimage = cv2.rectangle(tempimage,(line.W,line.N),(line.E,line.S),tmpColor,1)
             
-        if showBigFrame:
+        if self.kargs["frame"]:
             tempimage = cv2.rectangle(tempimage,(Line.W,Line.N),(Line.E,Line.S),(255,0,0),3)
 
-        cv2.imwrite('scannedimage_boundaries.jpg', tempimage)
-        
+        resultsFilePath = os.path.join(app.config['RESULTS_FOLDER'], self.filename.replace(".", "_boundaries."))
+        cv2.imwrite(resultsFilePath, tempimage)        
         
     def splitRegions(self):        
         #get ratio of elemes not symbols and not area under or over
@@ -307,10 +316,7 @@ class ImageSegmentationService:
         self.mask.itemset((i,j),currLabelHat)
                 
     def saveRegions(self):
-#        print("love is the answer <3")
-        
-        # TO DO - da error la 15_45 :(
-        # ++ daca am dat remove la regions not eligible din self.regions (gasite in lines), de ce au ramas in self.regions? xD
+        # TO DO -  daca am dat remove la regions not eligible din self.regions (gasite in lines), de ce au ramas in self.regions? xD
         for line in self.lines:
             for region in line.regions:
                 region.cropImg(self.mask)

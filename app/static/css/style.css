@@ -71,6 +71,7 @@ body{
 .postupload .buttons-group { margin-top:30px; }
 .postupload .buttons-group .btn-light { margin-bottom: 10px; }
 .postupload .buttons-group .js-toggle-original { display: none; }
+.postupload .spinner-grow { display:none; }
 
 .floatLeft { float: left; }
 .floatRight { float: right; }

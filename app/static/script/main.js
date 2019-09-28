@@ -3,6 +3,7 @@ var siteMessages;
 var filename;
 var processedFilename;
 var uploadsFolder = "/static/img/uploads/";
+var resultsFolder = "/static/results/"
 var defaultTimeout = 0;
 var segmentationShow = {};
 var modalShown = 0;
@@ -124,7 +125,7 @@ $(document).ready(function(){
         }
         else
         {
-            $(".postupload .js-image").attr("src", uploadsFolder + processedFilename);    
+            $(".postupload .js-image").attr("src", resultsFolder + processedFilename);    
             $(this).text("See Original");  
         }
     });
@@ -139,32 +140,36 @@ $(document).ready(function(){
             return;
         }
         
-        promiseApplyToImageCall(operations.preprocessing,  getCallArgs(filename, "preprocessing")).then(data => {
+        modalShown = 0
+        
+        promiseApplyToImageCall("preprocessing").then(data => {
             
             //TO DO - image preprocessing happened, manipulate the DOM
-            console.log('image preprocess - ' + data);
+            $(".js-spinner-preprocessing").hide();
             processedFilename = data;
-            $(".postupload .js-image").attr("src", uploadsFolder + data);
+            $(".postupload .js-image").attr("src", resultsFolder + data);
             $('.js-toggle-original').show();
 
-            return promiseApplyToImageCall(operations.segmentation, getCallArgs(filename, "segmentation"));
+            return promiseApplyToImageCall("segmentation");
         })
         .then(data => {
 
             //TO DO - image segmentation happened, manipulate the DOM
-            console.log('image segment - ' + data);
-
-            return promiseApplyToImageCall(operations.recognition, callArgs + "recognition");
+            $(".js-spinner-segmentation").hide();
+            return promiseApplyToImageCall("recognition");
         })
         .then(data => {
-           
+           $(".js-spinner-recognition").hide();
             //TO DO - text recognition happened, manipulate the DOM
-            console.log('image text rec - ' + data);
 
         })
         .catch(data => {
             if(data != 'stop')
                 showNotif(data);
+            
+            $(".js-spinner-preprocessing").hide();
+            $(".js-spinner-segmentation").hide();
+            $(".js-spinner-recognition").hide();
         });
     });
     
@@ -201,8 +206,6 @@ $(document).ready(function(){
                 $('.js-checkbox-showall').prop("checked", true);
         }
         
-        console.log(segmentationShow);
-        
         if(segmentationShow.lines && segmentationShow.words &&  
                 !(segmentationShow.regions || segmentationShow.boundaries || segmentationShow.frame || segmentationShow.showall))
             $('.js-modal-segmentation .js-save').prop("disabled", true);
@@ -226,11 +229,13 @@ $(document).ready(function(){
 	
 });
 
-function promiseApplyToImageCall(willCall, data)
+function promiseApplyToImageCall(operation)
 {
+    var data = getCallArgs(filename, operation);
+    
     const promise = new Promise(function(resolve, reject) {
     
-        if(willCall)
+        if($(".js-checkbox-"+operation).prop("checked"))
         {
             let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
                 resolve(data);
@@ -240,6 +245,7 @@ function promiseApplyToImageCall(willCall, data)
                 reject(data);
             }
     
+            $(".js-spinner-"+operation).css("display", "inline-block");
             callAjax("GET", "/image", data, success, error);
         }
         else
@@ -334,18 +340,19 @@ function getCheckboxesValues(cArr)
 
 function getCallArgs(file, operation)
 {
-    callArgs = "filename=" + file + "&operation=" + operation;
+
+    var kargs;
 
     switch(operation)
     {
         case "segmentation": ops = getCheckboxesValues(sgC);
-                             for(const prop of Object.keys(segmentationShow))
-                             {
-                                 callArgs += "&" + prop + "=" + (ops["prop"] ? 1 : 0)
-                             }
+                             ops["cropped"] = $(".js-checkbox-cropped").prop("checked")
+                             kargs = JSON.stringify(ops);
                              break;
-        default: break;
+        default: kargs=0;
     }
+    
+    callArgs = "filename=" + file + "&operation=" + operation + "&kargs=" + kargs;
     
     return callArgs;
 }

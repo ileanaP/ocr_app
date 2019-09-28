@@ -48,7 +48,8 @@ def manipulateImage():
     if request.method == 'GET':
         operation = request.args.get('operation')
         filename = request.args.get('filename')
-        imageService = ImageService(filename)
+        kargs = request.args.get('kargs')
+        imageService = ImageService(filename, kargs)
         returncode = imageService.apply(operation)
         
     return returncode
