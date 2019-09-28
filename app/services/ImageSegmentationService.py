@@ -17,24 +17,33 @@ Created on Sun Mar 24 13:32:52 2019
 
 imageToRead = "ccl_image_03.jpg"
 
+from app import app
 import numpy as np
 import cv2
 import time
 import math
-import Util
-import Line
-import Region
+from app.services.Util import Util
+from app.services.Line import Line
+from app.services.Region import Region
 
 class ImageSegmentationService:
-    def __init__(self, filename):
-        self.iter = 0
-        self.image = cv2.imread(filename)        
+    def __init__(self, filename, filePath):
+        self.filename = filename
+        self.filePath = filePath
+        self.eqClasses = []
+        self.etiquete = []
+        self.currLabel = 0;
+        
+        self.processed = 0
+        
+    def apply(self):
+        
+        self.image = cv2.imread(self.filePath)        
         self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         
         self.foreground = [level < 124 for level in self.image]
         
         self.h, self.w = self.image.shape
-#        self.labels = [[-1 for i in range(0,self.w)] for j in range(0, self.h)]
         
         self.labels = np.zeros([self.h,self.w],dtype=np.int32)
         self.labels.fill(-1)
@@ -42,38 +51,39 @@ class ImageSegmentationService:
         self.mask = np.zeros([self.h,self.w],dtype=np.int32)
         self.mask.fill(-1)
         
-        self.eqClasses = []
-        self.etiquete = []
-        self.currLabel = 0;
-        self.x, self.y = 0, 0 #initial point from where we start traversing the image
-        
         timeElapsed = time.time()
-        for i in range(self.h):
-            for j in range(self.w):
-                self.x = i
-                self.y = j
-                if self.foreground[self.x][self.y]:
-                    self.labelPoint()
+        
+        tmp = [[self.labelPoint(i, j) for j in range(self.w) if self.foreground[i][j]]
+                    for i in range(self.h)]
+        
         timeElapsed = time.time() - timeElapsed
         print('# labelPoints() - ', timeElapsed)
         
         self.relabelPoints()
         self.findOutliers()
+        
+        Line.setBoundaries(self.lines)
+        Line.setIsSymbol(self.lines, self.mask)
+        
         self.saveRegions()
+#        self.show()
+        
+        self.processed = 1
+        return
     
-    def labelPoint(self):
+    def labelPoint(self, x, y):
         nbrLbls = set()
         
-        for x in range(self.x-2, self.x+1):
-            for y in range(self.y-2, self.y+3):
-                if not (x == self.x and y == self.y):
-                    if x > -1 and y > -1 and y < self.w:
-                        label = self.labels[x][y]
+        for i in range(x-2, x+1):
+            for j in range(y-2, y+3):
+                if not (i == x and j == y):
+                    if i > -1 and j > -1 and j < self.w:
+                        label = self.labels[i][j]
                         nbrLbls.add(label)
 
         nbrLbls = {label for label in nbrLbls if label >= 0}
         if len(nbrLbls) > 0:
-            self.labels[self.x][self.y] = next(iter(nbrLbls))
+            self.labels[x][y] = next(iter(nbrLbls))
             
             neighborSet = set()
             for i in nbrLbls:
@@ -84,7 +94,7 @@ class ImageSegmentationService:
             for i in neighborSet:
                 self.eqClasses[i] = neighborSet
         else:
-            self.labels[self.x][self.y] = self.currLabel
+            self.labels[x][y] = self.currLabel
             self.eqClasses.insert(self.currLabel, {self.currLabel});
             self.currLabel = self.currLabel + 1
 
@@ -102,7 +112,7 @@ class ImageSegmentationService:
         self.labels = [[self.addPoint(i,j) 
                         for j in range(self.w) if self.labels[i][j] != -1] for i in range(self.h)]
 
-        self.removeNotEligible()
+        self.removeNotEligible(self.regions)
         
         timeElapsed = time.time() - timeElapsed
         print('# relabelPoints() - ', timeElapsed)
@@ -114,21 +124,21 @@ class ImageSegmentationService:
             if reg.out["dot"]:
                 self.tryFindRegionParent(reg)
         
-        self.removeNotEligible()
-        
-        self.setMetric()
-        
+        self.removeNotEligible(self.regions)        
+        self.setMetric()        
         self.setLines()
-        self.otherThanSetLines()
-        self.show()
+        self.splitRegions()
+
         # TO DO - pentru 02, ia "Birne" ca un sg. cuvant
-        
-    def removeNotEligible(self):
-        regionsToRemove = [reg for reg in self.regions if not reg.isEligible()]
+    
+    def removeNotEligible(self, regs):
+        regionsToRemove = [reg for reg in regs if not reg.isEligible()]
         
         for reg in regionsToRemove:
             self.mask[self.mask == reg.label] = -1
             self.regions.remove(reg)
+            
+        return [reg for reg in regs if reg not in regionsToRemove]
         
     def setLines(self):
         currLine = 1
@@ -152,53 +162,66 @@ class ImageSegmentationService:
         allLines = [reg.line for reg in self.regions]
         allLines = np.unique(np.asarray(allLines))
         
-        self.lines = [Line([reg for reg in self.regions if reg.line == i]) for i in allLines]
+#        self.lines = [Line([reg for reg in self.regions if reg.line == i]) for i in allLines]
+        self.lines = [[reg for reg in self.regions if reg.line == i] for i in allLines]
+        self.lines = [self.mergeSplitRegions(line) for line in self.lines]
+        self.lines = [self.removeNotEligible(line) for line in self.lines]
+        self.lines = [Line(line) for line in self.lines]
         
-    def show(self):
-        lineThickness = 2
-        # SHOW LINES
+    def mergeSplitRegions(self, line):
+        line.sort(key=lambda b: b.getWest())
+        
+        for i in range(len(line) - 1):
+            diff = line[i+1].W - line[i].E
+            if diff <= 0:
+                if line[i].S < line[i+1].N or line[i+1].S < line[i].N:
+                    self.mask[self.mask == line[i].label] = line[i+1].label
+                    line[i+1].join(line[i])
+                    i = i + 1
+                    
+        line = [reg for reg in line if reg.N != 0]
+        
+        return line
+        
+    def join(self, reg1, reg2):
+        self.mask[self.mask == reg2.label] = reg1.label
+        reg1.join(reg2)
+        
+    def show(self, showLines, showWords, showRegions, showLineBoundaries, showBigFrame):
         tempimage = cv2.imread(imageToRead)
-        
-        for line in self.lines:
-            if line.symbol:
-                lineColor = (255,255,0)
-            else:
-                lineColor = (125,125,125)
 
-            cv2.line(tempimage, (0, line.N-1), (self.w, line.N-1), lineColor, lineThickness)
-            cv2.line(tempimage, (0, line.S+2), (self.w, line.S+2), lineColor, lineThickness)
+        if showLines:    
+            for line in self.lines:
+                lineThickness = 2
+                lineColor = (192,192,192)
+
+                cv2.line(tempimage, (0, line.N), (self.w, line.N), lineColor, lineThickness)
+                cv2.line(tempimage, (0, line.S), (self.w, line.S), lineColor, lineThickness)
         
-        # SHOW WORDS
-        for line in self.lines:
-            for word in line.words:                    
-                tempimage = cv2.rectangle(tempimage,(word.W-1,word.N-1),(word.E+2,word.S+2),(255,0,255),lineThickness)
+        if showWords:
+            for line in self.lines:
+                for word in line.words:
+                    tempimage = cv2.rectangle(tempimage,(word.W,word.N+1),(word.E,word.S+1),(0,128,0),lineThickness)
                 
-        cv2.imshow('image',tempimage)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if showRegions:
+            for line in self.lines:
+                for reg in line.regions:
+                    tempimage = cv2.rectangle(tempimage,(reg.W,reg.N+1),(reg.E,reg.S+1),(34,34,178), 1)
+        
+        if showLineBoundaries:
+            for line in self.lines:
+                tmpColor = (112,128,144)
+                if line.symbol:
+                    tmpColor = (220,220,220)
+                tempimage = cv2.rectangle(tempimage,(line.W,line.N),(line.E,line.S),tmpColor,1)
+            
+        if showBigFrame:
+            tempimage = cv2.rectangle(tempimage,(Line.W,Line.N),(Line.E,Line.S),(255,0,0),3)
 
-        cv2.imwrite('scannedimage_words.jpg', tempimage)
-        
-        # SHOW LINE BOUNDARIES
-#        tempimage = cv2.imread(imageToRead)
-#        for line in self.lines:            
-#            tmpColor = (0,0,255)
-#            if line.symbol:
-#                tmpColor = (125,125,125)
-#            tempimage = cv2.rectangle(tempimage,(line.W,line.N),(line.E,line.S),tmpColor,2)
-#            
-#        tempimage = cv2.rectangle(tempimage,(Line.W,Line.N),(Line.E,Line.S),(255,0,0),3)
-#            
-#        cv2.imshow('image',tempimage)
-#        cv2.waitKey(0)
-#        cv2.destroyAllWindows()
-#
-#        cv2.imwrite('scannedimage_boundaries.jpg', tempimage)
-        
-        #  tempimage = cv2.rectangle(tempimage,(reg.W,reg.N),(reg.E,reg.S),(0,0,255),2) # ex. de aplicare a metodei "rectangle"
+        cv2.imwrite('scannedimage_boundaries.jpg', tempimage)
         
         
-    def otherThanSetLines(self):        
+    def splitRegions(self):        
         #get ratio of elemes not symbols and not area under or over
         normalRatios = [reg.ratio for reg in self.regions 
                             if not (reg.out["densityOver"] or reg.out["areaOver"] or reg.out["areaUnder"])]
@@ -225,9 +248,6 @@ class ImageSegmentationService:
                     line.regions.append(reg)
 
                 line.regions = [reg for reg in line.regions if reg not in regionsToRemove]
-        
-        Line.setBoundaries(self.lines)
-        Line.setIsSymbol(self.lines)
         
     def getNeighborRegions(self, reg):
         
@@ -258,9 +278,10 @@ class ImageSegmentationService:
             if len(croppedLabels) == 1:
                 croppedLabel = croppedLabels[0]
                 desiredRegion = [x for x in self.regions if x.label == croppedLabel][0]
-                    
-                self.mask[self.mask == reg.label] = croppedLabel
-                desiredRegion.join(reg)
+                  
+                self.join(desiredRegion, reg)
+#                self.mask[self.mask == reg.label] = croppedLabel
+#                desiredRegion.join(reg)
                 
     def setMetric(self):
         regionAreas = [reg.area for reg in self.regions]
@@ -285,8 +306,11 @@ class ImageSegmentationService:
         
         self.mask.itemset((i,j),currLabelHat)
                 
-    def saveRegions(self):        
-        for region in self.regions:
-            region.cropImg(self.mask)
-                
-thisCCL = CCL(imageToRead)
+    def saveRegions(self):
+#        print("love is the answer <3")
+        
+        # TO DO - da error la 15_45 :(
+        # ++ daca am dat remove la regions not eligible din self.regions (gasite in lines), de ce au ramas in self.regions? xD
+        for line in self.lines:
+            for region in line.regions:
+                region.cropImg(self.mask)

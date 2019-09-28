@@ -5,6 +5,8 @@ Created on Mon Sep 23 15:31:31 2019
 @author: ILENUCA
 """
 
+from app import app
+
 class Word:
     def __init__(self):
         self.regions = []

@@ -4,7 +4,11 @@ var filename;
 var processedFilename;
 var uploadsFolder = "/static/img/uploads/";
 var defaultTimeout = 0;
+var segmentationShow = {};
+var modalShown = 0;
 
+var ppC = ['preprocessing', 'segmentation', 'recognition'] // preprocess checkboxes
+var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'showall'] // segmentation checkboxes
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -16,7 +20,6 @@ Noty.overrideDefaults({
 });
 
 $(document).ready(function(){
-
 	$.getJSON('static/data/sitemessages.json')
 	.done(function(data){
     	siteMessages = JSON.parse(JSON.stringify(data));
@@ -26,7 +29,7 @@ $(document).ready(function(){
     $('.js-postupload').hide();
     $('.js-scan').hide();
     
-    $('.js-postupload input[type="checkbox"]').click(function(e){
+    $('.js-postupload .js-checkbox-main').click(function(e){
         if($(this).prop("checked"))
         {
             $(this).parent().parent().prevAll().each(function(e){
@@ -104,6 +107,8 @@ $(document).ready(function(){
                     $('.js-postupload').hide();
                     $(".js-postupload .js-image").attr("src", "");
                     
+                    segmentationShow = {};
+                    
                 }, defaultTimeout);
             }).catch(error => {
                 showNotif(error);
@@ -124,25 +129,25 @@ $(document).ready(function(){
         }
     });
 
-    $('.js-postupload .js-apply').on('click', function(e){
-
-        var operations = {
-            preprocessing: $('.js-checkbox-preprocessing').prop("checked"),
-            segmentation: $('.js-checkbox-segmentation').prop("checked"),
-            recognition: $('.js-checkbox-recognition').prop("checked")
+    $('.js-postupload .js-apply').on('click', function(e){        
+        var operations = getCheckboxesValues(ppC) // ppC - preprocess checkboxes
+        
+        if(operations.segmentation && !modalShown)
+        {
+            modalShown = 1;
+            $('.js-modal-segmentation').modal("show");
+            return;
         }
-
-        callArgs = "filename=" + filename + "&operation=";
-
-        promiseApplyToImageCall(operations.preprocessing, callArgs + "preprocessing").then(data => {
+        
+        promiseApplyToImageCall(operations.preprocessing,  getCallArgs(filename, "preprocessing")).then(data => {
             
             //TO DO - image preprocessing happened, manipulate the DOM
             console.log('image preprocess - ' + data);
             processedFilename = data;
             $(".postupload .js-image").attr("src", uploadsFolder + data);
             $('.js-toggle-original').show();
-            
-            return promiseApplyToImageCall(operations.segmentation, callArgs + "segmentation");
+
+            return promiseApplyToImageCall(operations.segmentation, getCallArgs(filename, "segmentation"));
         })
         .then(data => {
 
@@ -161,6 +166,62 @@ $(document).ready(function(){
             if(data != 'stop')
                 showNotif(data);
         });
+    });
+    
+    
+    // TO DO - la inchiderea modalului, sa apara tags cu optiunile selectate <3
+    $('body').on('click', '.js-checkbox-segmentation-modal', function(){
+        segmentationShow = getCheckboxesValues(sgC); // sgC - segmentation checkboxes
+        
+        // Show All Checkbox Functionality
+        if($(this).attr("class").includes("showall"))
+        {
+            if(segmentationShow.showall)
+            {
+                for(i = 0; i < sgC.length; i++)
+                    $('.js-checkbox-' + sgC[i]).prop("checked", true);
+            }
+            else
+            {
+                for(i = 0; i < sgC.length; i++)
+                    $('.js-checkbox-' + sgC[i]).prop("checked", false);
+            }
+        }
+        else
+        {
+            ok = 1;
+            for(const prop of Object.keys(segmentationShow))
+            {
+                if(!segmentationShow[prop] && !(prop == "showall"))
+                    ok = 0;
+            }
+            if(!ok)
+                $('.js-checkbox-showall').prop("checked", false);
+            else
+                $('.js-checkbox-showall').prop("checked", true);
+        }
+        
+        console.log(segmentationShow);
+        
+        if(segmentationShow.lines && segmentationShow.words &&  
+                !(segmentationShow.regions || segmentationShow.boundaries || segmentationShow.frame || segmentationShow.showall))
+            $('.js-modal-segmentation .js-save').prop("disabled", true);
+        else
+            $('.js-modal-segmentation .js-save').prop("disabled", false);
+    });
+    
+    $('body').on('click', '.js-modal-segmentation .js-close', function(){
+        
+        for(c in sgC)
+            segmentationShow[c] = false;
+        segmentationShow["lines"] = true;
+        segmentationShow["regions"] = true;
+    });
+
+    $('body').on('click', '.js-modal-segmentation .js-save', function(){
+        $('.js-modal-segmentation').modal('hide');
+        
+        // TO DO - add "stack overflow" tags with selected items
     });
 	
 });
@@ -259,4 +320,32 @@ function callAjax(type, url, data, success = '', error = '')
         success: success,
         error: error
         }); 
+}
+
+function getCheckboxesValues(cArr)
+{
+    var ops = {};
+    
+    for(i = 0; i < cArr.length; i++) 
+        ops[cArr[i]] = $('.js-checkbox-' + cArr[i]).prop("checked")
+        
+    return ops;
+}
+
+function getCallArgs(file, operation)
+{
+    callArgs = "filename=" + file + "&operation=" + operation;
+
+    switch(operation)
+    {
+        case "segmentation": ops = getCheckboxesValues(sgC);
+                             for(const prop of Object.keys(segmentationShow))
+                             {
+                                 callArgs += "&" + prop + "=" + (ops["prop"] ? 1 : 0)
+                             }
+                             break;
+        default: break;
+    }
+    
+    return callArgs;
 }

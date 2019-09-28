@@ -5,8 +5,9 @@ Created on Mon Sep 23 15:36:10 2019
 @author: ILENUCA
 """
 
-import Word
-import Util
+from app import app
+from app.services.Word import Word
+from app.services.Util import Util
 
 class Line:
     N, S, W, E = 0, 0, 0, 0
@@ -52,19 +53,20 @@ class Line:
     def setWordBoundaries(self):
         tmp = [word.setBoundaries() for word in self.words]
             
-    def mergeSplitRegions(self):
-        self.sortWestEast()
-        
-        for i in range(len(self.regions) - 1):
-            diff = self.regions[i+1].W - self.regions[i].E
-            if diff <= 0:
-                if self.regions[i].S < self.regions[i+1].N or self.regions[i+1].S < self.regions[i].N:
-                    self.regions[i+1].join(self.regions[i])
-                    i = i + 1
-        
-        self.regions = [reg for reg in self.regions if reg.N != 0]
-
-        return 1
+#    def mergeSplitRegions(self, mask):
+#        self.sortWestEast()
+#        
+#        for i in range(len(self.regions) - 1):
+#            diff = self.regions[i+1].W - self.regions[i].E
+#            if diff <= 0:
+#                if self.regions[i].S < self.regions[i+1].N or self.regions[i+1].S < self.regions[i].N:
+#                    mask[mask == self.regions[i].label] = self.regions[i+1].label
+#                    self.regions[i+1].join(self.regions[i])
+#                    i = i + 1
+#        
+#        self.regions = [reg for reg in self.regions if reg.N != 0]
+#
+#        return 1
 
 
     @classmethod
@@ -81,8 +83,8 @@ class Line:
         cls.E = max([line.E for line in lines])
         
     @staticmethod
-    def setIsSymbol(lines):
-        tmp = [line.mergeSplitRegions() for line in lines]
+    def setIsSymbol(lines, mask):
+#        tmp = [line.mergeSplitRegions(mask) for line in lines]
 
         for line in lines:
             line.findWords()

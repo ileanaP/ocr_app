@@ -5,19 +5,19 @@
             
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-preprocessing" name="preprocessing" type="checkbox" value="y">
+                  <input checked="true" class="js-checkbox-preprocessing js-checkbox-main" name="preprocessing" type="checkbox" value="y">
                   Image Preprocessing            
               </label>
             </div>
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-segmentation" name="segmentation" type="checkbox" value="y">  
+                  <input checked="true" class="js-checkbox-segmentation js-checkbox-main" name="segmentation" type="checkbox" value="y">  
                   Image Segmentation            
               </label>
             </div>
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-recognition" name="recognition" type="checkbox" value="y">
+                  <input checked="true" class="js-checkbox-recognition js-checkbox-main" name="recognition" type="checkbox" value="y">
                   Text Recognition      
               </label>
             </div>
@@ -37,3 +37,6 @@
         <img src="" class="js-image" />
     </div>
 </div>
+
+<!-- Modals -->
+{% include "modals/segmentation.html" %}

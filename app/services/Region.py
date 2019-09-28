@@ -5,9 +5,13 @@ Created on Mon Sep 23 15:37:00 2019
 @author: ILENUCA
 """
 
+from app import app
 import scipy.misc
+import imageio
 import numpy as np
 import math
+import os
+import sys
 
 class Region:
     areaMSD    = 0
@@ -58,6 +62,13 @@ class Region:
         returnValue = returnValue and not self.area < 7
         returnValue = returnValue and not self.isMargin() # scot outlierii mari si pixeli razleti
         
+#        if self.label == 34:
+#            self.printCoords()
+#            print(returnValue)
+#            print(self.area)
+#            if self.area == 0:
+#                sys.exit()
+        
         return returnValue
         
     def calculateRatio(self):
@@ -76,7 +87,7 @@ class Region:
             
         return self.density
     
-    def join(self, reg):
+    def join(self, reg):        
         self.area = self.area + reg.area
         
         self.N = min(self.N, reg.N)
@@ -158,14 +169,15 @@ class Region:
 
     def cropImg(self, mask):        
         self.cropped = mask[self.N:self.S+1, self.W:self.E+1]
-        self.cropped = [[255 if value == self.label else 0 for value in row ] for row in self.cropped]
-        self.cropped = np.asarray(self.cropped, dtype=np.int8)
-
-        height, width = self.cropped.shape
+        self.cropped = [[0 if value == self.label else 254 for value in row ] for row in self.cropped]
+        
+        self.cropped = np.asarray(self.cropped, dtype = np.uint8)
         
         fileName = str(self.area) + '_' + str(self.label)
-                
-#        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
-        fileName = fileName + ".png"
+        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
         
-        scipy.misc.imsave('cropped/' + fileName, self.cropped)
+        croppedFilePath = os.path.join(app.config['CROPPED_FOLDER'], fileName)
+        imageio.imwrite(croppedFilePath, self.cropped)
+    
+        
+        

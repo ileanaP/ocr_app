@@ -65,7 +65,7 @@ body{
 
 /* ** POST UPLOAD - postupload.html ***   */
 .postupload img { max-width : 100%; }
-.postupload .form-group { padding-top:30px; }
+.postupload h2 { padding-bottom:30px; }
 .postupload .form-group input { margin-right:10px; }
 .postupload .form-group .checkbox { padding-top: 5px; padding-bottom: 5px; }
 .postupload .buttons-group { margin-top:30px; }
