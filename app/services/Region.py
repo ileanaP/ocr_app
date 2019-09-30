@@ -12,6 +12,7 @@ import numpy as np
 import math
 import os
 import sys
+import time
 
 class Region:
     areaMSD    = 0
@@ -165,19 +166,20 @@ class Region:
             newRegions.append(region)
             
         return newRegions, currLabel + 1
-            
 
-    def cropImg(self, mask):        
+    def cropImg(self, line, char, mask):        
         self.cropped = mask[self.N:self.S+1, self.W:self.E+1]
         self.cropped = [[0 if value == self.label else 254 for value in row ] for row in self.cropped]
         
         self.cropped = np.asarray(self.cropped, dtype = np.uint8)
         
-        fileName = str(self.area) + '_' + str(self.label)
-        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
+        fileName = str(line+1) + "_" + str(char+1) + "_" +str(self.area) + '_' + str(self.label)
+        fileName += "_" + str(int(time.time())) + ".png"
+#        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
         
         croppedFilePath = os.path.join(app.config['CROPPED_FOLDER'], fileName)
         imageio.imwrite(croppedFilePath, self.cropped)
-    
+        
+        return fileName
         
         

@@ -33,6 +33,10 @@ class FileService:
         
         try:
             os.remove(filePath)
+            
+            self.cleanCroppedFolder()
+            
+            open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w").close(); # delete file contents
             return '1007'
         except:
             return '1006'
@@ -62,3 +66,10 @@ class FileService:
             return filename #file was uploaded succcesfully
         else:
             return '1004' #file extention not allowed
+        
+    @staticmethod
+    def cleanCroppedFolder():
+        for tmp_file in os.listdir(app.config['CROPPED_FOLDER']):
+            filePathDel = os.path.join(app.config['CROPPED_FOLDER'], tmp_file)
+            if os.path.isfile(filePathDel):
+                os.unlink(filePathDel)

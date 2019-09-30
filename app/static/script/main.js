@@ -5,11 +5,9 @@ var processedFilename;
 var uploadsFolder = "/static/img/uploads/";
 var resultsFolder = "/static/results/"
 var defaultTimeout = 0;
-var segmentationShow = {};
-var modalShown = 0;
 
 var ppC = ['preprocessing', 'segmentation', 'recognition'] // preprocess checkboxes
-var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'showall'] // segmentation checkboxes
+var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'cropped', 'showall'] // segmentation checkboxes
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -21,8 +19,10 @@ Noty.overrideDefaults({
 });
 
 $(document).ready(function(){
-	$.getJSON('static/data/sitemessages.json')
-	.done(function(data){
+
+    $.ajaxSetup({ cache: false }); #TO DO - sa gasesc un mod mai bun de a nu cacheuicropped_filenames.json xD (eventual cu ?v=..)
+
+	$.getJSON('static/data/sitemessages.json?v=' + Date.now()).done(function(data){ // I prevent cache-ing by adding the timestamp
     	siteMessages = JSON.parse(JSON.stringify(data));
 	});
 
@@ -30,22 +30,24 @@ $(document).ready(function(){
     $('.js-postupload').hide();
     $('.js-scan').hide();
     
-    $('.js-postupload .js-checkbox-main').click(function(e){
+    $("body").on("click", ".js-postupload .js-cb-main", function(e){
         if($(this).prop("checked"))
         {
             $(this).parent().parent().prevAll().each(function(e){
                 $(this).children().children().first().prop('checked', true);
+                $(this).children().children().first().trigger('change');
             });
         }
         else
         {
             $(this).parent().parent().nextAll().each(function(e){
                 $(this).children().children().first().prop('checked', false);
+                $(this).children().children().first().trigger('change');
             });
         }
     });
 
-    $(".js-file-form").submit(function(e){
+    $("body").on("submit", ".js-file-form", function(e){
         e.preventDefault();
         
         var form = this;
@@ -69,7 +71,7 @@ $(document).ready(function(){
             });     
     });
 
-	$('.js-file').change(function()
+	$("body").on("change", ".js-file", function()
 	{
 		var fileName = $('.js-file').val().split("\\")[2];
 		var ext = fileName.split(".")[1];
@@ -87,7 +89,7 @@ $(document).ready(function(){
 		}
 	});
 	
-	$('.js-return-to-upload').on('click',function(){
+	$("body").on("click", ".js-return-to-upload", function(){
     	
     	if(filename == '')
         {
@@ -102,13 +104,16 @@ $(document).ready(function(){
                 setTimeout(() => {
                     filename = '';
                     
-                    $('.js-file').val("");
-        			$('.js-file-label').html("Choose file");
-                    $('.js-upload').show();
-                    $('.js-postupload').hide();
-                    $(".js-postupload .js-image").attr("src", "");
+                    $(".js-file").val("")
+                    $(".js-file-label").text("Choose file");
                     
-                    segmentationShow = {};
+                    $(".js-image").attr("src", "");
+                    $(".js-cb-main").prop("checked", true);
+                    $(".js-results-cropped").html("");
+                    restoreDefaultSegmentationTags();
+                    
+                    $(".js-upload").show();
+                    $(".js-postupload").hide();
                     
                 }, defaultTimeout);
             }).catch(error => {
@@ -117,7 +122,7 @@ $(document).ready(function(){
         
         });
         
-    $('.js-toggle-original').on('click', function(e){ // TO DO - sa ascund butonul cand se incarca o noua imagine
+    $("body").on("click", ".js-toggle-original", function(e){ // TO DO - sa ascund butonul cand se incarca o noua imagine
         if($(this).text() == "See Original")
         {
             $(".postupload .js-image").attr("src", uploadsFolder + filename);
@@ -129,19 +134,19 @@ $(document).ready(function(){
             $(this).text("See Original");  
         }
     });
+    
+    $("body").on("change", ".js-cb-segmentation", function(){
+        if($(".js-cb-segmentation").prop("checked"))
+            $(".js-badges-list").css("visibility", "visible");
+        else
+            $(".js-badges-list").css("visibility", "hidden")
+    });
 
-    $('.js-postupload .js-apply').on('click', function(e){        
+    $("body").on('click', '.js-postupload .js-apply', function(e){        
         var operations = getCheckboxesValues(ppC) // ppC - preprocess checkboxes
         
-        if(operations.segmentation && !modalShown)
-        {
-            modalShown = 1;
-            $('.js-modal-segmentation').modal("show");
-            return;
-        }
-        
-        modalShown = 0
-        
+        $(".js-postupload .js-options").css("pointer-events", "none");
+        console.log("consoolee");
         promiseApplyToImageCall("preprocessing").then(data => {
             
             //TO DO - image preprocessing happened, manipulate the DOM
@@ -155,6 +160,26 @@ $(document).ready(function(){
         .then(data => {
 
             //TO DO - image segmentation happened, manipulate the DOM
+            
+            if($(".js-cb-cropped").prop("checked"))
+            {
+                $.getJSON('static/results/cropped_filenames.json').done(function(data){ // sa iau static/results din app.config (daca se poate)
+                        filenames = JSON.parse(JSON.stringify(data));
+                        
+                        var img;
+                        for(var i = 0; i < filenames.length; i++)
+                        {
+                            fileInfo = filenames[i].split("_");
+                            
+                            img = $("<img />")
+                                    .attr('src', 'static/results/cropped/'+filenames[i])
+                                    .attr("title", "Line " + fileInfo[0] + ", Char " + fileInfo[1]);
+                            $(".js-results-cropped").append(img);
+                            //$(".js-results-cropped").append('<img src="static/results/cropped/'+filenames[i]+'" />');
+                        }
+                    });
+            }
+            
             $(".js-spinner-segmentation").hide();
             return promiseApplyToImageCall("recognition");
         })
@@ -170,64 +195,107 @@ $(document).ready(function(){
             $(".js-spinner-preprocessing").hide();
             $(".js-spinner-segmentation").hide();
             $(".js-spinner-recognition").hide();
+        })
+        .finally(data => {
+            console.log("finalllyyy");
+            $(".js-postupload .js-options").css("pointer-events", "auto");
         });
     });
-    
-    
-    // TO DO - la inchiderea modalului, sa apara tags cu optiunile selectate <3
-    $('body').on('click', '.js-checkbox-segmentation-modal', function(){
-        segmentationShow = getCheckboxesValues(sgC); // sgC - segmentation checkboxes
+
+    // sgC - segmentation checkboxes
+    $('body').on('click', '.js-cb-segmentation-modal', function(){
         
-        // Show All Checkbox Functionality
+        // "Show All" Checkbox Functionality
         if($(this).attr("class").includes("showall"))
         {
-            if(segmentationShow.showall)
+            if($('.js-cb-showall').prop("checked"))
             {
-                for(i = 0; i < sgC.length; i++)
-                    $('.js-checkbox-' + sgC[i]).prop("checked", true);
+                for(i = 0; i < sgC.length-2; i++)
+                    $('.js-cb-' + sgC[i]).prop("checked", true);
             }
             else
             {
-                for(i = 0; i < sgC.length; i++)
-                    $('.js-checkbox-' + sgC[i]).prop("checked", false);
+                for(i = 0; i < sgC.length-2; i++)
+                    $('.js-cb-' + sgC[i]).prop("checked", false);
             }
         }
         else
         {
             ok = 1;
-            for(const prop of Object.keys(segmentationShow))
+            for(i = 0; i < sgC.length; i++)
             {
-                if(!segmentationShow[prop] && !(prop == "showall"))
+                if(!$('.js-cb-' + sgC[i]).prop("checked") && !(sgC[i] == "showall" || sgC[i] == "cropped"))
                     ok = 0;
             }
             if(!ok)
-                $('.js-checkbox-showall').prop("checked", false);
+                $('.js-cb-showall').prop("checked", false);
             else
-                $('.js-checkbox-showall').prop("checked", true);
+                $('.js-cb-showall').prop("checked", true);
         }
         
-        if(segmentationShow.lines && segmentationShow.words &&  
-                !(segmentationShow.regions || segmentationShow.boundaries || segmentationShow.frame || segmentationShow.showall))
+        console.log("before def values");
+        if(areDefaultValues())
+            console.log("values are default");
+        else
+            console.log("values are NOT default");
+        console.log("AFTER def values");
+        
+        if(areDefaultValues())
             $('.js-modal-segmentation .js-save').prop("disabled", true);
         else
             $('.js-modal-segmentation .js-save').prop("disabled", false);
     });
     
     $('body').on('click', '.js-modal-segmentation .js-close', function(){
-        
-        for(c in sgC)
-            segmentationShow[c] = false;
-        segmentationShow["lines"] = true;
-        segmentationShow["regions"] = true;
+        restoreDefaultSegmentationTags()
     });
 
     $('body').on('click', '.js-modal-segmentation .js-save', function(){
+    
         $('.js-modal-segmentation').modal('hide');
-        
+        showSegmentationTags();
         // TO DO - add "stack overflow" tags with selected items
+    });
+    
+    $("body").on("click", ".js-badges-list", function(){
+        $('.js-modal-segmentation').modal("show");
     });
 	
 });
+
+function restoreDefaultSegmentationTags()
+{
+    for(i =0; i< sgC.length; i++)
+        $(".js-cb-" + sgC[i]).prop("checked", false);
+
+    $(".js-cb-lines").prop("checked", true);
+    $(".js-cb-regions").prop("checked", true);
+    
+    showSegmentationTags();
+}
+
+function areDefaultValues()
+{
+    return $('.js-cb-lines').prop("checked") && $('.js-cb-words').prop("checked") &&  
+           !($('.js-cb-regions').prop("checked") || $('.js-cb-boundaries').prop("checked") || 
+             $('.js-cb-frame').prop("checked") || $('.js-cb-showall').prop("checked") ||  $('.js-cb-cropped').prop("checked"));
+}
+
+
+function showSegmentationTags()
+{
+    for(i =0; i< sgC.length - 1; i++)
+    {
+        if($(".js-cb-"+sgC[i]).prop("checked"))
+        {
+            $(".js-badge-" + sgC[i]).removeClass("badge-light").addClass("badge-secondary");
+        }
+        else
+        {
+            $(".js-badge-" + sgC[i]).removeClass("badge-secondary").addClass("badge-light");
+        }
+    }
+}
 
 function promiseApplyToImageCall(operation)
 {
@@ -235,7 +303,7 @@ function promiseApplyToImageCall(operation)
     
     const promise = new Promise(function(resolve, reject) {
     
-        if($(".js-checkbox-"+operation).prop("checked"))
+        if($(".js-cb-"+operation).prop("checked"))
         {
             let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
                 resolve(data);
@@ -333,7 +401,7 @@ function getCheckboxesValues(cArr)
     var ops = {};
     
     for(i = 0; i < cArr.length; i++) 
-        ops[cArr[i]] = $('.js-checkbox-' + cArr[i]).prop("checked")
+        ops[cArr[i]] = $('.js-cb-' + cArr[i]).prop("checked")
         
     return ops;
 }
@@ -346,7 +414,6 @@ function getCallArgs(file, operation)
     switch(operation)
     {
         case "segmentation": ops = getCheckboxesValues(sgC);
-                             ops["cropped"] = $(".js-checkbox-cropped").prop("checked")
                              kargs = JSON.stringify(ops);
                              break;
         default: kargs=0;

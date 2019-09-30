@@ -1,11 +1,12 @@
 <div class="row">
-    <div class="col-sm-4">
+    
+    <div class="col-sm-4 js-options">
         <h2>Next steps...</h2>
-        <div class="form-group">     
+        <div class="form-group">
             
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-preprocessing js-checkbox-main" name="preprocessing" type="checkbox" value="y">
+                  <input checked="true" class="js-cb-preprocessing js-cb-main" name="preprocessing" type="checkbox" value="y">
                   Image Preprocessing
               </label>
               <div class="spinner-grow text-secondary js-spinner-preprocessing" role="status">
@@ -14,7 +15,7 @@
             </div>
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-segmentation js-checkbox-main" name="segmentation" type="checkbox" value="y">  
+                  <input checked="true" class="js-cb-segmentation js-cb-main" name="segmentation" type="checkbox" value="y">  
                   Image Segmentation            
               </label>
               <div class="spinner-grow text-secondary js-spinner-segmentation" role="status">
@@ -23,12 +24,20 @@
             </div>
             <div class="checkbox">
               <label>
-                  <input checked="true" class="js-checkbox-recognition js-checkbox-main" name="recognition" type="checkbox" value="y">
+                  <input checked="true" class="js-cb-recognition js-cb-main" name="recognition" type="checkbox" value="y">
                   Text Recognition      
               </label>
               <div class="spinner-grow text-secondary js-spinner-recognition" role="status">
                   <span class="sr-only">Loading...</span>
               </div>
+            </div>
+            <div class="badges-list js-badges-list">
+                <span class="badge badge-secondary js-badge-lines">lines</span>
+                <span class="badge badge-light js-badge-words">words</span>
+                <span class="badge badge-secondary js-badge-regions">regions</span>
+                <span class="badge badge-light js-badge-boundaries">boundaries</span>
+                <span class="badge badge-light js-badge-frame">frame</span>    
+                <span class="badge badge-light js-badge-cropped">cropped</span>                
             </div>
             <div class="buttons-group">
                 <div class="floatLeft">
@@ -41,6 +50,7 @@
                 <div class="clear"></div>
             </div>
         </div>
+        <div class="results-cropped js-results-cropped"></div>
     </div>
     <div class="col-sm-8">
         <img src="" class="js-image" />

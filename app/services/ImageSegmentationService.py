@@ -28,6 +28,7 @@ import json
 from app.services.Util import Util
 from app.services.Line import Line
 from app.services.Region import Region
+from app.services.FileService import FileService
 
 class ImageSegmentationService:
     def __init__(self, filename, filePath, kargs):
@@ -197,7 +198,11 @@ class ImageSegmentationService:
         tempimage = cv2.imread(self.filePath)
         
         if self.kargs["cropped"]:
-            self.saveRegions()
+            fileNames = self.saveRegions()
+            
+            f = open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w")
+            f.write(json.dumps(fileNames))
+            f.close()
 
         if self.kargs["lines"]:    
             for line in self.lines:
@@ -317,6 +322,11 @@ class ImageSegmentationService:
                 
     def saveRegions(self):
         # TO DO -  daca am dat remove la regions not eligible din self.regions (gasite in lines), de ce au ramas in self.regions? xD
-        for line in self.lines:
-            for region in line.regions:
-                region.cropImg(self.mask)
+
+        FileService.cleanCroppedFolder()
+        
+        fileNames = [self.lines[i].regions[j].cropImg(i, j, self.mask) for i in range(len(self.lines))
+                        for j in range(len(self.lines[i].regions))]
+        
+        return fileNames
+                
