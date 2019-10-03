@@ -58,7 +58,7 @@ body{
 .app-logo a { color: white; text-decoration: none; }
 .logo-text{	float:left; font-size:2em; }
 .logo-menu{	float:right; padding-top:1em; }
-	
+.hidden { visibility: hidden; }
 /* ** UPLOAD - pupload.html ***   */
 /* hack for hiding default WTF label for file input - TO DO */
 .upload .form-group .control-label{ display:none; }
@@ -70,7 +70,7 @@ body{
 .postupload .form-group .checkbox { padding-top: 5px; padding-bottom: 5px; }
 .postupload .buttons-group { margin-top:20px; }
 .postupload .buttons-group .btn-light { margin-bottom: 10px; }
-.postupload .buttons-group .js-toggle-original { display: none; }
+/*.postupload .buttons-group .js-toggle-original { display: none; }*/
 .postupload .spinner-grow { display:none; }
 .postupload .badges-list  { cursor:pointer; }
 .postupload .badges-list .badge-light { color:silver; }

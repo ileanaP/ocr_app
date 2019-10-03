@@ -2,6 +2,7 @@ var mimeTypes = ['jpg', 'bmp', 'png', 'tif'];
 var siteMessages;
 var filename;
 var processedFilename;
+var segmentedFilename;
 var uploadsFolder = "/static/img/uploads/";
 var resultsFolder = "/static/results/"
 var defaultTimeout = 0;
@@ -19,10 +20,7 @@ Noty.overrideDefaults({
 });
 
 $(document).ready(function(){
-
-    $.ajaxSetup({ cache: false }); #TO DO - sa gasesc un mod mai bun de a nu cacheuicropped_filenames.json xD (eventual cu ?v=..)
-
-	$.getJSON('static/data/sitemessages.json?v=' + Date.now()).done(function(data){ // I prevent cache-ing by adding the timestamp
+	$.getJSON('static/data/sitemessages.json').done(function(data){ 
     	siteMessages = JSON.parse(JSON.stringify(data));
 	});
 
@@ -107,9 +105,10 @@ $(document).ready(function(){
                     $(".js-file").val("")
                     $(".js-file-label").text("Choose file");
                     
-                    $(".js-image").attr("src", "");
+                    $(".js-postupload .js-image").attr("src", "");
                     $(".js-cb-main").prop("checked", true);
                     $(".js-results-cropped").html("");
+                    $(".js-btn-results").css("visibility", "hidden");
                     restoreDefaultSegmentationTags();
                     
                     $(".js-upload").show();
@@ -122,17 +121,14 @@ $(document).ready(function(){
         
         });
         
-    $("body").on("click", ".js-toggle-original", function(e){ // TO DO - sa ascund butonul cand se incarca o noua imagine
-        if($(this).text() == "See Original")
-        {
-            $(".postupload .js-image").attr("src", uploadsFolder + filename);
-            $(this).text("See Preprocessed");
-        }
-        else
-        {
-            $(".postupload .js-image").attr("src", resultsFolder + processedFilename);    
-            $(this).text("See Original");  
-        }
+    $("body").on("click", ".js-btn-original", function(e){
+        $(".postupload .js-image").attr("src", uploadsFolder + filename)
+    });
+    $("body").on("click", ".js-btn-preprocessed", function(e){
+        $(".postupload .js-image").attr("src", resultsFolder + processedFilename);
+    });
+    $("body").on("click", ".js-btn-segmented", function(e){
+        $(".postupload .js-image").attr("src", resultsFolder + segmentedFilename);
     });
     
     $("body").on("change", ".js-cb-segmentation", function(){
@@ -152,8 +148,9 @@ $(document).ready(function(){
             //TO DO - image preprocessing happened, manipulate the DOM
             $(".js-spinner-preprocessing").hide();
             processedFilename = data;
-            $(".postupload .js-image").attr("src", resultsFolder + data);
-            $('.js-toggle-original').show();
+            $(".postupload .js-image").attr("src", resultsFolder + data + "?v=" + Date.now());
+            $('.js-btn-original').css("visibility", "visible");
+            $('.js-btn-preprocessed').css("visibility", "visible");
 
             return promiseApplyToImageCall("segmentation");
         })
@@ -163,7 +160,8 @@ $(document).ready(function(){
             
             if($(".js-cb-cropped").prop("checked"))
             {
-                $.getJSON('static/results/cropped_filenames.json').done(function(data){ // sa iau static/results din app.config (daca se poate)
+                $.getJSON('static/results/cropped_filenames.json?v=' + Date.now()).done(function(data){ // I prevent cache-ing by adding the timestamp 
+                // TO DO - sa iau static/results din app.config (daca se poate)
                         filenames = JSON.parse(JSON.stringify(data));
                         
                         var img;
@@ -172,13 +170,16 @@ $(document).ready(function(){
                             fileInfo = filenames[i].split("_");
                             
                             img = $("<img />")
-                                    .attr('src', 'static/results/cropped/'+filenames[i])
+                                    .attr('src', 'static/results/cropped/'+filenames[i] + "?v=" + Date.now())
                                     .attr("title", "Line " + fileInfo[0] + ", Char " + fileInfo[1]);
                             $(".js-results-cropped").append(img);
-                            //$(".js-results-cropped").append('<img src="static/results/cropped/'+filenames[i]+'" />');
                         }
                     });
             }
+            
+            segmentedFilename = data;            
+            $(".postupload .js-image").attr("src", resultsFolder + data + "?v=" + Date.now());
+            $('.js-btn-segmented').css("visibility", "visible");
             
             $(".js-spinner-segmentation").hide();
             return promiseApplyToImageCall("recognition");

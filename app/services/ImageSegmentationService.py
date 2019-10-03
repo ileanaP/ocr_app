@@ -194,8 +194,13 @@ class ImageSegmentationService:
         
     def show(self):
         # TO DO - sa pun coordonatele dreptunghiurilor intr-un JSON, si sa le desenez din JS
-        print("show - no beginning")
         tempimage = cv2.imread(self.filePath)
+        
+        lines = []
+        words = []
+        regions = []
+        boundaries = []
+        frame = []
         
         if self.kargs["cropped"]:
             fileNames = self.saveRegions()
@@ -203,36 +208,69 @@ class ImageSegmentationService:
             f = open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w")
             f.write(json.dumps(fileNames))
             f.close()
-
-        if self.kargs["lines"]:    
+        
+        if self.kargs["lines"]:
+            toggle = 0
             for line in self.lines:
                 lineThickness = 2
-                lineColor = (192,192,192)
-
+                if line.symbol:
+                    lineColor = (0,0,255)
+                else:
+                    if toggle:
+                        lineColor = (192,192,192)
+                        toggle = 0
+                    else:
+                        lineColor = (230,216,173)
+                        toggle = 1
+                
+                lines.append([line.N, line.S, line.symbol])
                 cv2.line(tempimage, (0, line.N), (self.w, line.N), lineColor, lineThickness)
                 cv2.line(tempimage, (0, line.S), (self.w, line.S), lineColor, lineThickness)
         
         if self.kargs["words"]:
             for line in self.lines:
                 for word in line.words:
+                    words.append([word.W, word.N+1, word.E, word.S+1])
                     tempimage = cv2.rectangle(tempimage,(word.W,word.N+1),(word.E,word.S+1),(0,128,0),lineThickness)
                 
         if self.kargs["regions"]:
             for line in self.lines:
                 for reg in line.regions:
+                    regions.append([reg.W, reg.N+1, reg.E, reg.S+1])
                     tempimage = cv2.rectangle(tempimage,(reg.W,reg.N+1),(reg.E,reg.S+1),(34,34,178), 2)
         
         if self.kargs["boundaries"]:
             for line in self.lines:
                 tmpColor = (112,128,144)
                 if line.symbol:
-                    tmpColor = (220,220,220)
+                    tmpColor = (0,0,250)
+                boundaries.append([line.W, line.N, line.E, line.S, line.symbol])
                 tempimage = cv2.rectangle(tempimage,(line.W,line.N),(line.E,line.S),tmpColor,1)
             
         if self.kargs["frame"]:
+            frame.append([Line.W, Line.N, Line.E, Line.S])
             tempimage = cv2.rectangle(tempimage,(Line.W,Line.N),(Line.E,Line.S),(255,0,0),3)
-
-        resultsFilePath = os.path.join(app.config['RESULTS_FOLDER'], self.filename.replace(".", "_boundaries."))
+        
+        toJson = {
+                    "lines": lines,
+                    "words": words,
+                    "regions": regions,
+                    "boundaries": boundaries,
+                    "frame": frame
+                }
+        
+        print("~~~~~")
+        print(json.dumps(toJson))
+        print("~~~~~~~~~")        
+        
+        self.jsonPath = os.path.join(app.config["RESULTS_FOLDER"], self.filename.split(".", 1)[0] + ".json")
+        f = open(self.jsonPath, "w+")
+        f.write(json.dumps(toJson))
+        f.close()
+        
+        self.segmentedFilename = self.filename.replace(".", "_segmented.")
+        
+        resultsFilePath = os.path.join(app.config['RESULTS_FOLDER'], self.segmentedFilename)
         cv2.imwrite(resultsFilePath, tempimage)        
         
     def splitRegions(self):        

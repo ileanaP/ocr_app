@@ -173,8 +173,7 @@ class Region:
         
         self.cropped = np.asarray(self.cropped, dtype = np.uint8)
         
-        fileName = str(line+1) + "_" + str(char+1) + "_" +str(self.area) + '_' + str(self.label)
-        fileName += "_" + str(int(time.time())) + ".png"
+        fileName = str(line+1) + "_" + str(char+1) + "_" +str(self.area) + '_' + str(self.label) + ".png"
 #        fileName = fileName + "_N" + str(self.N) + "S" + str(self.S) + "W" + str(self.W) + "E" + str(self.E) + ".png"
         
         croppedFilePath = os.path.join(app.config['CROPPED_FOLDER'], fileName)

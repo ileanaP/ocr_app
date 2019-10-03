@@ -31,12 +31,20 @@ class FileService:
         filename = secure_filename(filename)
         filePath = self.getFilePath(filename)
         
+        preprocessedFilePath = self.getFilePath(filename.replace(".", "_preprocessing."))
+        segmentedFilePath = self.getFilePath(filename.replace(".", "_segmented."))
+        
         try:
             os.remove(filePath)
             
-            self.cleanCroppedFolder()
+            if os.path.exists(preprocessedFilePath):
+                os.remove(preprocessedFilePath)
+            if os.path.exists(segmentedFilePath):
+                os.remove(segmentedFilePath)
             
+            self.cleanCroppedFolder()
             open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w").close(); # delete file contents
+            
             return '1007'
         except:
             return '1006'

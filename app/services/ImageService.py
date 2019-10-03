@@ -34,12 +34,14 @@ class ImageService:
                 
         elif operation == 'segmentation':
             
+#            self.jsonPath = os.path.join(app.config["RESULTS_FOLDER"],filename.split(".", 1)[0] + ".json")
+            
             self.operator = ImageSegmentationService(self.filename, self.targetFilePath, self.kargs) # sa ma folosesc de filePath            
             self.operator.apply()
             
             if self.operator.processed:
                 
-                returnvalue = 'ok'
+                returnvalue = self.operator.segmentedFilename
                 
         else:
             returnvalue = 'operation not yet defined'
