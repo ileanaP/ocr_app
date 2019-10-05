@@ -9,6 +9,7 @@ import os
 from app import app
 from app.services.ImagePreprocessingService import ImagePreprocessingService
 from app.services.ImageSegmentationService import ImageSegmentationService
+import json
 #from app.services.ImageSegmentationService import ImageSegmentationService
 
 class ImageService:
@@ -41,7 +42,7 @@ class ImageService:
             
             if self.operator.processed:
                 
-                returnvalue = self.operator.segmentedFilename
+                returnvalue = json.dumps([self.operator.segmentedFilename, self.operator.jsonFilename])
                 
         else:
             returnvalue = 'operation not yet defined'

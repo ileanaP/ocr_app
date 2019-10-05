@@ -129,3 +129,21 @@ body{
 .checkbox  label > input:active {
     border: 2px solid #1E69B3;
 }
+
+/* https://stackoverflow.com/questions/14824747/overlay-html5-canvas-over-image */
+
+.outsideWrapper{ 
+    /*width:906px; height:680px;*/
+    border:1px solid blue;}
+.insideWrapper{ 
+    width:100%; height:100%; 
+    position:relative;}
+.coveredImage{ 
+    /*width:100%; height:100%; */
+    position:absolute; top:0px; left:0px;
+}
+.defaultCanvas{ 
+    /*width:100%; height:100%; */
+    position:absolute; top:0px; left:0px;
+    background-color: rgba(0,0,0,0);
+}
