@@ -223,7 +223,9 @@ class ImageSegmentationService:
                     lineColor = (230,216,173)
                     toggle = 1
             
-            lines.append([line.N, line.S, line.symbol])
+            lines.append([0, line.N, self.w, 0, line.symbol])
+            lines.append([0, line.S, self.w, 0, line.symbol])
+#            lines.append([line.N, line.S, line.symbol])
             cv2.line(tempimage, (0, line.N), (self.w, line.N), lineColor, lineThickness)
             cv2.line(tempimage, (0, line.S), (self.w, line.S), lineColor, lineThickness)
     

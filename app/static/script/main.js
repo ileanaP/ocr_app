@@ -6,9 +6,13 @@ var segmentedFilenames;
 var uploadsFolder = "/static/img/uploads/";
 var resultsFolder = "/static/results/"
 var defaultTimeout = 0;
+var cHeight, cWidth;
+var v;
+var x1, y1, x2, y2, symbol, strokeStyles;
 
 var ppC = ['preprocessing', 'segmentation', 'recognition'] // preprocess checkboxes
 var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'cropped', 'showall'] // segmentation checkboxes
+var cNames = ["img", "lines", "words", "regions", "boundaries", "frame"]; // canvas names
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -20,6 +24,8 @@ Noty.overrideDefaults({
 });
 
 $(document).ready(function(){
+    v = Date.now();
+
 	$.getJSON('static/data/sitemessages.json').done(function(data){ 
     	siteMessages = JSON.parse(JSON.stringify(data));
 	});
@@ -115,6 +121,7 @@ $(document).ready(function(){
                     $(".js-results-cropped").html("");
                     $(".js-btn-results").css("visibility", "hidden");
                     restoreDefaultSegmentationTags();
+                    showSegmentationTags();
                     
                     $(".js-upload").show();
                     $(".js-postupload").hide();
@@ -154,7 +161,7 @@ $(document).ready(function(){
             //TO DO - image preprocessing happened, manipulate the DOM
             $(".js-spinner-preprocessing").hide();
             processedFilename = data;
-            $(".js-image").attr("src", resultsFolder + data + "?v=" + Date.now());
+            $(".js-image").attr("src", resultsFolder + data + "?v=" + v);
             $('.js-btn-original').css("visibility", "visible");
             $('.js-btn-preprocessed').css("visibility", "visible");
 
@@ -169,43 +176,40 @@ $(document).ready(function(){
             
             segmentedFilenames = JSON.parse(data);
                   
-            //$(".js-image").attr("src", resultsFolder + segmentedFilenames[0] + "?v=" + Date.now());
+            //$(".js-image").attr("src", resultsFolder + segmentedFilenames[0] + "?v=" + v);
             $('.js-btn-segmented').css("visibility", "visible");
             
             $('#postupload').imagesLoaded(function(){
                 
-                var cWidth = $(".js-image").width();
-                var cHeight = $(".js-image").height();
+                cWidth = parseInt($(".js-image").width());
+                cHeight = parseInt($(".js-image").height());
                 
-                var cNames = ["img", "lines", "words", "regions", "boundaries", "frame"]
                 var canvas;
                 
                 for(var i = 0; i < cNames.length; i++)
                 {
                     canvas = newCanvas(cNames[i], cWidth, cHeight);
                     $(".insideWrapper").append(canvas);
-                    
-                    fillCanvas(cNames[i]);
                 }
                 
                 /* ******** */                
+                /*
                 c = document.getElementById("js-canvas-lines");
                 ctx = c.getContext("2d");
                 
                 ctx.strokeStyle = "#FF0000";
                 ctx.lineWidth = 1;
-                ctx.strokeRect(20, 30, 100, 150);
+                ctx.strokeRect(30, 60, 100, 200);*/
                 
                 
                 /* ******** */
                 
                 
-                $.getJSON('static/results/' + segmentedFilenames[1] + "?v=" + Date.now()).done(function(data){
+                $.getJSON('static/results/' + segmentedFilenames[1] + "?v=" + v).done(function(data){
                     var data = JSON.parse(JSON.stringify(data));
                     
-                    var ratio = cHeight / data["shape"][0];
-                    
-                    console.log(ratio);
+                    fillCanvases(data);               
+                    displayCanvases();
                 });
                 
             });
@@ -277,20 +281,42 @@ $(document).ready(function(){
             $('.js-modal-segmentation .js-save').prop("disabled", false);
     });
     
-    $('body').on('click', '.js-modal-segmentation .js-close', function(){
+    $('.js-modal-segmentation .js-close').on('click', function(){
         restoreDefaultSegmentationTags()
     });
 
-    $('body').on('click', '.js-modal-segmentation .js-save', function(){
-    
+    $('.js-modal-segmentation .js-save').on('click', function(){
         $('.js-modal-segmentation').modal('hide');
-        showSegmentationTags();
         // TO DO - add "stack overflow" tags with selected items
     });
     
-    $("body").on("click", ".js-badges-list", function(){
-        $('.js-modal-segmentation').modal("show");
+    $('.js-modal-segmentation').on('hidden.bs.modal', function (e) {
+        showSegmentationTags();
+        $(".js-badges-list").prop("onclick", null).off("click");
     });
+    
+    $(".js-badges-list").on("click", function(){
+        $('.js-modal-segmentation').modal("show");
+
+        $(".js-badge").on("click", function(){            
+            if($(this).hasClass("badge-secondary"))
+            {
+                $(this).removeClass("badge-secondary").addClass("badge-light");
+                $(".js-cb-" + $(this).text()).prop("checked", false);
+                
+                if($("#js-canvas-" + $(this).text()).length)
+                    $("#js-canvas-" + $(this).text()).css("visibility", "hidden");
+            }
+            else
+            {
+                $(this).removeClass("badge-light").addClass("badge-secondary");
+                $(".js-cb-"+ $(this).text()).prop("checked", true);
+                
+                if($("#js-canvas-" + $(this).text()).length)
+                    $("#js-canvas-" + $(this).text()).css("visibility", "visible");
+            }
+        });
+    });    
 	
 });
 
@@ -300,31 +326,79 @@ function newCanvas(name, width, height)
                     .addClass("defaultCanvas")
                     .attr("id", "js-canvas-" + name)
                     .attr("width", width)
-                    .attr("height", height)
-                    .width(width)
-                    .height(height);
+                    .attr("height", height);
+                    /*.width(width)
+                    .height(height);*/
                     
     return canvas;
 }
 
-function fillCanvas(name)
+function fillCanvases(data)
 {
-    switch(name)
+
+    c = document.getElementById("js-canvas-img");
+    var img = document.getElementById("js-image");
+    ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0, $(".js-image").width(), $(".js-image").height());
+    
+    $(".js-image").css("visibility", "hidden");
+
+    var hRatio = cHeight / data["shape"][0];
+    var wRatio = cWidth / data["shape"][1];
+    
+    $.ajax({
+        url: 'static/data/strokestyles.json',
+        data: "v=" + v,
+        dataType: 'json',
+        async: false,
+        success: function(data){
+            strokeStyles = JSON.parse(JSON.stringify(data));
+        },
+        error: function(err){ console.log(err); }
+    });
+
+    for(var j = 1; j < cNames.length; j++)
     {
-        case "img": c = document.getElementById("js-canvas-img");
-                    var img = document.getElementById("js-image");
-                    ctx = c.getContext("2d");
-                    ctx.drawImage(img, 0, 0, $(".js-image").width(), $(".js-image").height());
-                    
-                    $(".js-image").css("visibility", "hidden");
-                    break;
-        default: break;
+        fillCanvas(data[cNames[j]], cNames[j], hRatio, wRatio);
+    }
+}
+
+function fillCanvas(data, name, hRatio, wRatio)
+{
+    c = document.getElementById("js-canvas-" + name);
+    ctx = c.getContext("2d");
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = strokeStyles[name] + strokeStyles["opacity"];
+
+    for(var i = 0; i < data.length; i++)
+    {
+        x1 = parseInt(data[i][0]*wRatio);
+        y1 = parseInt(data[i][1]*hRatio);
+        x2 = parseInt(data[i][2]*wRatio);
+        y2 = parseInt(data[i][3]*hRatio);
+        
+        ctx.strokeRect(x1, y1, x2-x1, y2-y1);
+    }
+}
+
+function displayCanvases()
+{    
+    for(var i = 1; i < cNames.length; i++)
+    {
+        if($(".js-cb-" + cNames[i]).prop("checked"))
+        {
+            $("#js-canvas-" + cNames[i]).css("visibility", "visible");
+        }
+        else
+        {
+            $("#js-canvas-" + cNames[i]).css("visibility", "hidden");
+        }
     }
 }
 
 function showCropped()
 {
-    $.getJSON('static/results/cropped_filenames.json?v=' + Date.now()).done(function(data){ // I prevent cache-ing by adding the timestamp 
+    $.getJSON('static/results/cropped_filenames.json?v=' + v).done(function(data){ // I prevent cache-ing by adding the timestamp 
     // TO DO - sa iau static/results din app.config (daca se poate)
             filenames = JSON.parse(JSON.stringify(data));
             
@@ -334,7 +408,7 @@ function showCropped()
                 fileInfo = filenames[i].split("_");
                 
                 img = $("<img />")
-                        .attr('src', 'static/results/cropped/'+filenames[i] + "?v=" + Date.now())
+                        .attr('src', 'static/results/cropped/'+filenames[i] + "?v=" + v)
                         .attr("title", "Line " + fileInfo[0] + ", Char " + fileInfo[1]);
                 $(".js-results-cropped").append(img);
             }
@@ -348,8 +422,6 @@ function restoreDefaultSegmentationTags()
 
     $(".js-cb-lines").prop("checked", true);
     $(".js-cb-regions").prop("checked", true);
-    
-    showSegmentationTags();
 }
 
 function areDefaultValues()
