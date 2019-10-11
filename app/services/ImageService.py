@@ -41,8 +41,7 @@ class ImageService:
             self.operator.apply()
             
             if self.operator.processed:
-                
-                returnvalue = json.dumps([self.operator.segmentedFilename, self.operator.jsonFilename])
+                returnvalue = self.operator.jsonFilename
                 
         else:
             returnvalue = 'operation not yet defined'

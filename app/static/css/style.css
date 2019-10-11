@@ -72,10 +72,11 @@ body{
 .postupload .buttons-group .btn-light { margin-bottom: 10px; }
 /*.postupload .buttons-group .js-toggle-original { display: none; }*/
 .postupload .spinner-grow { display:none; }
+.postupload .spinner-border { display:none; margin:10px; }
 .postupload .badges-list  { cursor:pointer; }
 .postupload .badges-list .badge-light { color:silver; }
 .postupload .results-cropped { width:96%; background-color:whitesmoke; max-height:300px; overflow:scroll; }
-.postupload .results-cropped img { margin:2px; }
+.postupload .results-cropped img { margin:2px; display:none;}
 
 .floatLeft { float: left; }
 .floatRight { float: right; }
@@ -132,9 +133,11 @@ body{
 
 /* https://stackoverflow.com/questions/14824747/overlay-html5-canvas-over-image */
 
-.outsideWrapper{ 
-    /*width:906px; height:680px;*/
-    border:1px solid blue;}
+/*.outsideWrapper
+{ 
+    width:906px; height:680px;
+    border:1px solid blue;
+}*/
 .insideWrapper{ 
     width:100%; height:100%; 
     position:relative;}

@@ -47,12 +47,15 @@
                 <div class="floatRight">
                     <button type="button" class="btn btn-light js-btn-results js-btn-original hidden">Original</button><br/>
                     <button type="button" class="btn btn-light js-btn-results js-btn-preprocessed hidden">Preprocessed</button><br/>
-                    <button type="button" class="btn btn-light js-btn-results js-btn-segmented hidden">Segmented</button>
                 </div>
                 <div class="clear"></div>
             </div>
         </div>
-        <div class="results-cropped js-results-cropped"></div>
+        <div class="results-cropped js-results-cropped">
+            <div class="spinner-border text-secondary js-spinner-cropped" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+        </div>
     </div>
     <div class="col-sm-8 js-image-holder">
         <div class="outsideWrapper">
