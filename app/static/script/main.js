@@ -10,10 +10,12 @@ var cHeight, cWidth;
 var imgRatio;
 var v;
 var x1, y1, x2, y2, symbol, strokeStyles;
+var canvas;
+var preprocessing, segmentation, recognition;
 
 var ppC = ['preprocessing', 'segmentation', 'recognition'] // preprocess checkboxes
 var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'cropped', 'showall'] // segmentation checkboxes
-var cNames = ["img", "lines", "words", "regions", "boundaries", "frame"]; // canvas names
+var cNames = ["lines", "words", "regions", "boundaries", "frame"]; // canvas names
 
 Noty.overrideDefaults({
     layout   : 'topCenter',
@@ -138,14 +140,14 @@ $(document).ready(function(){
         });
         
     $("body").on("click", ".js-btn-original", function(e){
-        /*$(".js-image").attr("src", uploadsFolder + filename);
-        $(".js-image").show();
-        $(".js-canvas-img").hide();*/
+        $(".defaultCanvas").css("visibility", "hidden");
+        $(".js-image").attr("src", uploadsFolder + filename);
+        $(".js-image").css("visibility", "visible");
     });
     $("body").on("click", ".js-btn-preprocessed", function(e){
-        /*$(".js-image").attr("src", resultsFolder + processedFilename);
-        $(".js-image").hide();
-        $(".js-canvas-img").show();*/
+        $(".js-image").css("visibility", "hidden");
+        $("#js-canvas-img").css("visibility", "visible");
+        displayCanvases();
     });
     
     $("body").on("change", ".js-cb-segmentation", function(){
@@ -159,44 +161,52 @@ $(document).ready(function(){
         var operations = getCheckboxesValues(ppC) // ppC - preprocess checkboxes
         
         $(".js-postupload .js-options").css("pointer-events", "none");
-        console.log("consoolee");
         
-        promiseApplyToImageCall("preprocessing").then(data => {
+        promiseApplyToImageCall("preprocessing").then(data => { //image preprocessing happened, manipulate the DOM
             
-            //TO DO - image preprocessing happened, manipulate the DOM
-            $(".js-spinner-preprocessing").hide();
-            processedFilename = data;
-            $(".js-image").attr("src", resultsFolder + data + "?v=" + v);
-            $('.js-btn-original').css("visibility", "visible");
-            $('.js-btn-preprocessed').css("visibility", "visible");
+            if(data != null) // "preprocessing" was called for the first time
+            {
+                processedFilename = data;
+                $(".js-spinner-preprocessing").hide();
+                
+                $('.js-btn-original').css("visibility", "visible");
+                $('.js-btn-preprocessed').css("visibility", "visible");
+                
+                $(".js-image").attr("src", resultsFolder + processedFilename + "?v=" + v);
+            
+            
+                $("#postupload").imagesLoaded(function(){
+                    cWidth = parseInt($(".js-image").width());
+                    cHeight = parseInt($(".js-image").height());
+                    
+                    canvas = newCanvas("img", cWidth, cHeight);
+                    $(".insideWrapper").append(canvas);
+                    fillCanvas(0, "img");
+                });
+            }
 
             return promiseApplyToImageCall("segmentation");
         })
-        .then(data => {
-
-            //TO DO - image segmentation happened, manipulate the DOM
+        .then(data => { //image segmentation happened, manipulate the DOM
             
-            if($(".js-cb-cropped").prop("checked"))
+            if(data != null)
+            {
+                
+                if($(".js-cb-cropped").prop("checked"))
                 toggleCropped();
-            disableModal();
-            
-            croppedFilenames = data;
-
-            $('.js-btn-segmented').css("visibility", "visible");
-            
-            $('#postupload').imagesLoaded(function(){
+                disableModal();
                 
-                cWidth = parseInt($(".js-image").width());
-                cHeight = parseInt($(".js-image").height());
+                croppedFilenames = data;
+    
+                $('.js-btn-segmented').css("visibility", "visible");
                 
-                var canvas;
-                
-                for(var i = 0; i < cNames.length; i++)
-                {
-                    canvas = newCanvas(cNames[i], cWidth, cHeight);
-                    $(".insideWrapper").append(canvas);
-                }
-                
+                $("#postupload").imagesLoaded(function(){
+                    for(var i = 0; i < cNames.length; i++)
+                    {
+                        canvas = newCanvas(cNames[i], cWidth, cHeight);
+                        $(".insideWrapper").append(canvas);
+                    }
+                });
                 
                 $.getJSON('static/results/' + croppedFilenames + "?v=" + v).done(function(data){
                     var data = JSON.parse(JSON.stringify(data));
@@ -205,15 +215,20 @@ $(document).ready(function(){
                     displayCanvases();
                 });
                 
-            });
-            
-            $(".js-spinner-segmentation").hide();
+                $(".js-spinner-segmentation").hide();
+            }
             
             return promiseApplyToImageCall("recognition");
         })
         .then(data => {
-           $(".js-spinner-recognition").hide();
-            //TO DO - text recognition happened, manipulate the DOM
+        
+            if(data != null)
+            {
+                $(".js-spinner-recognition").hide();
+                //TO DO - text recognition happened, manipulate the DOM
+                
+                // disable js-apply button
+            }
 
         })
         .catch(data => {
@@ -225,7 +240,6 @@ $(document).ready(function(){
             $(".js-spinner-recognition").hide();
         })
         .finally(data => {
-            console.log("finalllyyy");
             $(".js-postupload .js-options").css("pointer-events", "auto");
         });
     });
@@ -260,13 +274,6 @@ $(document).ready(function(){
             else
                 $('.js-cb-showall').prop("checked", true);
         }
-        
-        console.log("before def values");
-        if(areDefaultValues())
-            console.log("values are default");
-        else
-            console.log("values are NOT default");
-        console.log("AFTER def values");
         
         if(areDefaultValues())
             $('.js-modal-segmentation .js-save').prop("disabled", true);
@@ -355,13 +362,6 @@ function newCanvas(name, width, height)
 
 function fillCanvases(data)
 {
-    c = document.getElementById("js-canvas-img");
-    var img = document.getElementById("js-image");
-    ctx = c.getContext("2d");
-    ctx.drawImage(img, 0, 0, $(".js-image").width(), $(".js-image").height());
-    
-    $(".js-image").css("visibility", "hidden");
-
     imgRatio = cWidth / data["shape"][1];
     
     $.ajax({
@@ -375,7 +375,7 @@ function fillCanvases(data)
         error: function(err){ console.log(err); }
     });
 
-    for(var j = 1; j < cNames.length; j++)
+    for(var j = 0; j < cNames.length; j++)
     {
         fillCanvas(data[cNames[j]], cNames[j]);
     }
@@ -383,6 +383,19 @@ function fillCanvases(data)
 
 function fillCanvas(data, name)
 {
+    
+    if(name == "img")
+    {
+        c = document.getElementById("js-canvas-img");
+        var img = document.getElementById("js-image");
+        ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, $(".js-image").width(), $(".js-image").height());
+        
+        $(".js-image").css("visibility", "hidden");
+        
+        return;
+    }
+    
     c = document.getElementById("js-canvas-" + name);
     ctx = c.getContext("2d");
     ctx.lineWidth = 1;
@@ -401,7 +414,7 @@ function fillCanvas(data, name)
 
 function displayCanvases()
 {    
-    for(var i = 1; i < cNames.length; i++)
+    for(var i = 0; i < cNames.length; i++)
     {
         if($(".js-cb-" + cNames[i]).prop("checked"))
         {
@@ -418,7 +431,6 @@ function toggleCropped()
 {
     if($(".js-results-cropped img").length == 0)
     {
-        //console.log("children length 0");
         $(".js-spinner-cropped").show();
         $.getJSON('static/results/cropped_filenames.json?v=' + v).done(function(data){ // I prevent cache-ing by adding the timestamp 
         // TO DO - sa iau static/results din app.config (daca se poate)
@@ -443,15 +455,7 @@ function toggleCropped()
     }
     else
     {
-        //console.log("children length not 0");
-        if($(".js-results-cropped").css("visibility") == "visible")
-        {
-            $(".js-results-cropped").css("visibility", "hidden");
-        }
-        else
-        {
-            $(".js-results-cropped").css("visibility", "visible");
-        }
+        toggleVisibility(".js-results-cropped");
     }
 }
 
@@ -495,6 +499,13 @@ function promiseApplyToImageCall(operation)
     
         if($(".js-cb-"+operation).prop("checked"))
         {
+            
+            if($(".js-cb-"+operation).attr('readonly') == "readonly")
+            {
+                resolve();
+                return;
+            }
+        
             let success = (data) => { // TO DO - reject daca nu se intoarce expected result 
                 resolve(data);
             }
@@ -502,9 +513,12 @@ function promiseApplyToImageCall(operation)
             let error = (data) => {
                 reject(data);
             }
-    
+
             $(".js-spinner-"+operation).css("display", "inline-block");
             callAjax("GET", "/image", data, success, error);
+            
+            $(".js-cb-" + operation).attr("disabled", "disabled");
+            $(".js-cb-" + operation).attr("readonly", "readonly");
         }
         else
         {
@@ -594,6 +608,12 @@ function getCheckboxesValues(cArr)
         ops[cArr[i]] = $('.js-cb-' + cArr[i]).prop("checked")
         
     return ops;
+}
+
+function toggleVisibility(elem)
+{
+    var visibility = $(elem).css("visibility") == "visible" ? "hidden" : "visible";
+    $(elem).css("visibility", visibility );
 }
 
 function getCallArgs(file, operation)
