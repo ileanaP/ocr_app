@@ -7,6 +7,7 @@ Created on Sun May 26 12:38:42 2019
 
 from flask import render_template, request
 from flask.helpers import make_response
+
 from app import app
 from app.services.FileService import FileService
 from app.services.ImageService import ImageService
@@ -50,6 +51,18 @@ def manipulateImage():
         filename = request.args.get('filename')
         kargs = request.args.get('kargs')
         imageService = ImageService(filename, kargs)
+        returncode = imageService.apply(operation)
+        
+    return returncode
+
+@app.route('/image', methods=['GET',  'POST'])
+def manipulateImage():
+    returncode = '0'
+    
+    if request.method == 'GET':
+        operation = request.args.get('operation')
+        filename = request.args.get('filename')
+        imageService = ImageService(filename) # TO DO - Image Service
         returncode = imageService.apply(operation)
         
     return returncode
