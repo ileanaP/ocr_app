@@ -31,7 +31,7 @@
     },
 "1007":
     {
-        "message" : "The file was deleted. You will get back to previous page.",
+        "message" : "The file was deleted.",
         "type" : "warning"
     }
 }

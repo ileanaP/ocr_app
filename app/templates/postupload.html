@@ -1,18 +1,73 @@
 <div class="row">
-    <div class="col-sm-4">
+    
+    <div class="col-sm-4 js-options">
         <h2>Next steps...</h2>
-        <!--form-->
-        <div class="form-group">     
-            {{ wtf.form_field(postUploadForm.preprocessing, class="checkbox", checked=True) }}
-            {{ wtf.form_field(postUploadForm.segmentation, class="checkbox", checked=True) }}
-            {{ wtf.form_field(postUploadForm.recognition, class="checkbox", checked=True) }}
-            {{ wtf.form_field(postUploadForm.submit, class="btn btn-primary js-submit") }}
-            <button type="button" class="btn btn-default js-return-to-upload">Try Another Image</button>
+        <div class="form-group">
+            
+            <div class="checkbox">
+              <label>
+                  <input checked="true" class="js-cb-preprocessing js-cb-main" name="preprocessing" type="checkbox" value="y">
+                  Image Preprocessing
+              </label>
+              <div class="spinner-grow text-secondary js-spinner-preprocessing" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input checked="true" class="js-cb-segmentation js-cb-main" name="segmentation" type="checkbox" value="y">  
+                  Image Segmentation            
+              </label>
+              <div class="spinner-grow text-secondary js-spinner-segmentation" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input checked="true" class="js-cb-recognition js-cb-main" name="recognition" type="checkbox" value="y">
+                  Text Recognition      
+              </label>
+              <div class="spinner-grow text-secondary js-spinner-recognition" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+            </div>
+            <div class="badges-list js-badges-list" data-modalDisabled="0">
+                <span class="badge js-badge badge-secondary js-badge-lines">lines</span>
+                <span class="badge js-badge badge-light js-badge-words">words</span>
+                <span class="badge js-badge badge-secondary js-badge-regions">regions</span>
+                <span class="badge js-badge badge-light js-badge-boundaries">boundaries</span>
+                <span class="badge js-badge badge-light js-badge-frame">frame</span>    
+                <span class="badge js-badge badge-light js-badge-cropped">cropped</span>                
+            </div>
+            <div class="buttons-group">
+                <div class="floatLeft">
+                    <button type="button" class="btn btn-primary js-apply">Apply</button><br/>
+                    <a href="#" class="js-return-to-upload">Try Another Image</a>
+                </div>
+                <div class="floatRight">
+                    <button type="button" class="btn btn-light js-btn-results js-btn-original hidden">Original</button><br/>
+                    <button type="button" class="btn btn-light js-btn-results js-btn-preprocessed hidden">Preprocessed</button><br/>
+                </div>
+                <div class="clear"></div>
+            </div>
         </div>
-        <!--/form-->
-  
+        <div class="results-cropped js-results-cropped">
+            <div class="spinner-border text-secondary js-spinner-cropped" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+        </div>
     </div>
-    <div class="col-sm-8">
-        <img src="" class="js-image" />
+    <div class="col-sm-8 js-image-holder">
+        <div class="outsideWrapper">
+            <div class="insideWrapper">
+                <img class="coveredImage js-image" id="js-image">
+                <!--canvas class="coveringCanvas" id="js-canvas-1" width="906" height="680"></canvas-->
+                <!--canvas class="defaultCanvas" id="js-canvas-2"></canvas-->
+            </div>
+        </div>
+        <!--img src="" class="js-image" /-->
     </div>
 </div>
+
+<!-- Modals -->
+{% include "modals/segmentation.html" %}

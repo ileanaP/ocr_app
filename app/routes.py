@@ -7,17 +7,17 @@ Created on Sun May 26 12:38:42 2019
 
 from flask import render_template, request
 from flask.helpers import make_response
+
+from app import app
 from app.services.FileService import FileService
 from app.services.ImageService import ImageService
-from app import app
-from app.forms import UploadForm, PostUploadForm
+from app.forms import UploadForm
 
 @app.route('/')
 @app.route('/index')
 def index():
     uploadForm = UploadForm()
-    postUploadForm = PostUploadForm()
-    return render_template('index.html', title='Home', uploadForm=uploadForm, postUploadForm = postUploadForm)
+    return render_template('index.html', title='Home', uploadForm=uploadForm)
 
 @app.route('/example')
 def example():
@@ -38,8 +38,21 @@ def upload(): # TO DO - sa trimit la 404 daca se acceseaza fara sa fie POST
     if request.method == 'GET': #to rewrite - request.args pentru GET
         filename = request.args.get('filename')
         fileService = FileService()
-        returncode = fileService.delete(filename)
+        returncode = fileService.delete(filename) # TO DO - sa stearga si artefacts pt fisier (_preprocessed, etc...)
     
+    return returncode
+
+@app.route('/image', methods=['GET',  'POST'])
+def manipulateImage():
+    returncode = '0'
+    
+    if request.method == 'GET':
+        operation = request.args.get('operation')
+        filename = request.args.get('filename')
+        kargs = request.args.get('kargs')
+        imageService = ImageService(filename, kargs)
+        returncode = imageService.apply(operation)
+        
     return returncode
 
 @app.route('/image', methods=['GET',  'POST'])

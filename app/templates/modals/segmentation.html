@@ -1,0 +1,64 @@
+<div class="modal fade js-modal-segmentation" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Segmentation Display</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+      <div class="form-group">
+          <p>Choose what you'll see on the image:</p>
+          <div class="checkbox">
+              <label>
+                  <input class="js-cb-lines js-cb-segmentation-modal" type="checkbox" value="y" checked>
+                  Lines
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input class="js-cb-words js-cb-segmentation-modal" type="checkbox" value="y">  
+                  Words            
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input class="js-cb-regions js-cb-segmentation-modal" type="checkbox" value="y" checked>
+                  Regions      
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input class="js-cb-boundaries js-cb-segmentation-modal" type="checkbox" value="y">
+                  Line Boundaries      
+              </label>
+            </div>
+            <div class="checkbox">
+              <label>
+                  <input class="js-cb-frame js-cb-segmentation-modal" type="checkbox" value="y">
+                  Text Area Frame      
+              </label>
+            </div>
+           <div class="checkbox">
+              <label>
+                  <input class="js-cb-showall js-cb-segmentation-modal" type="checkbox" value="y">
+                  Show All      
+              </label>
+            </div>
+            <p>Extra:</p>
+            <div class="checkbox">
+              <label>
+                  <input class="js-cb-cropped js-cb-segmentation-modal" type="checkbox" value="y">
+                  Cropped Regions Images      
+              </label>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary js-close" data-dismiss="modal">Close and Leave Default</button>
+        <button type="button" class="btn btn-primary js-save" disabled>Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
