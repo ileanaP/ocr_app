@@ -1,9 +1,8 @@
 {
      "lines":"#FF8300",
-     "lines-symbol":"#D6DBDF",
+     "symbolLines":"#D6DBDF",
      "words":"#006400",
      "regions":"#FF0000",
      "boundaries":"#5D6D7E",
-     "frame":"#a76bcf",
-     "opacity":"FF"
+     "frame":"#a76bcf"
 }

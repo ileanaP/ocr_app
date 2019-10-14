@@ -414,6 +414,8 @@ function fillCanvases(data)
     {
         fillCanvas(data[cNames[j]], cNames[j]);
     }
+    
+    fillCanvas(data["symbolLines"], "symbolLines");
 }
 
 function fillCanvas(data, name)
@@ -431,10 +433,12 @@ function fillCanvas(data, name)
         return;
     }
     
-    c = document.getElementById("js-canvas-" + name);
+    var canvasId = "js-canvas-" + (name == "symbolLines" ? "lines" : name);
+    
+    c = document.getElementById(canvasId);
     ctx = c.getContext("2d");
     ctx.lineWidth = 1;
-    ctx.strokeStyle = strokeStyles[name] + strokeStyles["opacity"];
+    ctx.strokeStyle = strokeStyles[name];
 
     for(var i = 0; i < data.length; i++)
     {

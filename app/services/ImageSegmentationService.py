@@ -194,7 +194,7 @@ class ImageSegmentationService:
         reg1.join(reg2)
         
     def show(self):
-        lines, words, regions, boundaries, frame = [], [], [], [], []
+        lines, symbolLines, words, regions, boundaries, frame = [], [], [], [], [], []
 
         fileNames = self.saveRegions()
         
@@ -203,8 +203,12 @@ class ImageSegmentationService:
         f.close()
 
         for line in self.lines:
-            lines.append([0, line.N, self.w, line.N, line.symbol])
-            lines.append([0, line.S, self.w, line.S, line.symbol])
+            if line.symbol:
+                symbolLines.append([0, line.N, self.w, line.N])
+                symbolLines.append([0, line.S, self.w, line.S])
+            else:
+                lines.append([0, line.N, self.w, line.N])
+                lines.append([0, line.S, self.w, line.S])
 
         for line in self.lines:
             for word in line.words:
@@ -224,6 +228,7 @@ class ImageSegmentationService:
         toJson = {
                     "shape": shape,
                     "lines": lines,
+                    "symbolLines": symbolLines,
                     "words": words,
                     "regions": regions,
                     "boundaries": boundaries,
