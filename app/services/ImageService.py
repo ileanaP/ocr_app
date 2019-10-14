@@ -9,6 +9,7 @@ import os
 from app import app
 from app.services.ImagePreprocessingService import ImagePreprocessingService
 from app.services.ImageSegmentationService import ImageSegmentationService
+from app.services.FileService import FileService as fs
 import json
 #from app.services.ImageSegmentationService import ImageSegmentationService
 
@@ -16,11 +17,10 @@ class ImageService:
     def __init__(self, filename, kargs): #s-ar putea ca filename sa fie NONE
         self.filename = filename
         self.kargs = kargs
-        self.filePath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        self.filePath = fs.getFilePath('upload', filename)
         self.operator = None
-        
-        self.targetFilename = self.filename.replace(".", "_preprocessing.")
-        self.targetFilePath = os.path.join(app.config['RESULTS_FOLDER'], self.targetFilename)
+
+        self.targetFilePath = fs.getFilePath('results', self.filename)
         
     def apply(self, operation):
         returnvalue = '0'
@@ -31,17 +31,20 @@ class ImageService:
             self.operator.apply(self.targetFilePath)
             
             if self.operator.processed:
-                returnvalue = self.targetFilename
+                returnvalue = self.filename
                 
         elif operation == 'segmentation':
             
-#            self.jsonPath = os.path.join(app.config["RESULTS_FOLDER"],filename.split(".", 1)[0] + ".json")
+            filenames = [fs.changeFileExt(self.filename, "json"), fs.changeFileExt(self.filename, "cropped.json")]
             
-            self.operator = ImageSegmentationService(self.filename, self.targetFilePath, self.kargs) # sa ma folosesc de filePath            
+            segmentedJsonPath = fs.getFilePath('results', filenames[0])
+            croppedJsonPath = fs.getFilePath('results', filenames[1])
+            
+            self.operator = ImageSegmentationService(self.targetFilePath, croppedJsonPath, segmentedJsonPath, self.kargs) # sa ma folosesc de filePath            
             self.operator.apply()
             
             if self.operator.processed:
-                returnvalue = self.operator.jsonFilename
+                returnvalue = json.dumps(filenames)
                 
         else:
             returnvalue = 'operation not yet defined'

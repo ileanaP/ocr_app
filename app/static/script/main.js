@@ -2,7 +2,6 @@ var mimeTypes = ['jpg', 'bmp', 'png', 'tif'];
 var siteMessages;
 var filename;
 var processedFilename;
-var croppedFilenames;
 var uploadsFolder = "/static/img/uploads/";
 var resultsFolder = "/static/results/"
 var defaultTimeout = 0;
@@ -12,6 +11,7 @@ var v;
 var x1, y1, x2, y2, symbol, strokeStyles;
 var canvas;
 var preprocessing, segmentation, recognition;
+var croppedFilenames;
 
 var ppC = ['preprocessing', 'segmentation', 'recognition'] // preprocess checkboxes
 var sgC = ['lines', 'words', 'regions', 'boundaries', 'frame', 'cropped', 'showall'] // segmentation checkboxes
@@ -196,7 +196,8 @@ $(document).ready(function(){
                 toggleCropped();
                 disableModal();
                 
-                croppedFilenames = data;
+                data = JSON.parse(data);    // data[0] - filename of json containing segmentation data of image
+                croppedFilenames = data[1]; // filename of json containing cropped regions filenames
     
                 $('.js-btn-segmented').css("visibility", "visible");
                 
@@ -208,7 +209,7 @@ $(document).ready(function(){
                     }
                 });
                 
-                $.getJSON('static/results/' + croppedFilenames + "?v=" + v).done(function(data){
+                $.getJSON('static/results/' + data[0] + "?v=" + v).done(function(data){
                     var data = JSON.parse(JSON.stringify(data));
                     
                     fillCanvases(data);               
@@ -432,7 +433,7 @@ function toggleCropped()
     if($(".js-results-cropped img").length == 0)
     {
         $(".js-spinner-cropped").show();
-        $.getJSON('static/results/cropped_filenames.json?v=' + v).done(function(data){ // I prevent cache-ing by adding the timestamp 
+        $.getJSON(resultsFolder + croppedFilenames+ '?v=' + v).done(function(data){ // I prevent cache-ing by adding the timestamp 
         // TO DO - sa iau static/results din app.config (daca se poate)
                 filenames = JSON.parse(JSON.stringify(data));
                 

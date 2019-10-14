@@ -31,9 +31,10 @@ from app.services.Region import Region
 from app.services.FileService import FileService
 
 class ImageSegmentationService:
-    def __init__(self, filename, filePath, kargs):
-        self.filename = filename
+    def __init__(self, filePath, croppedJsonPath, segmentedJsonPath, kargs):
         self.filePath = filePath
+        self.croppedJsonPath = croppedJsonPath
+        self.segmentedJsonPath = segmentedJsonPath
         self.eqClasses = []
         self.etiquete = []
         self.currLabel = 0;
@@ -197,7 +198,7 @@ class ImageSegmentationService:
 
         fileNames = self.saveRegions()
         
-        f = open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w")
+        f = open(self.croppedJsonPath, "w")
         f.write(json.dumps(fileNames))
         f.close()
 
@@ -228,10 +229,8 @@ class ImageSegmentationService:
                     "boundaries": boundaries,
                     "frame": frame
                 }
-        
-        self.jsonFilename = self.filename.split(".", 1)[0] + ".json"
-        self.jsonPath = os.path.join(app.config["RESULTS_FOLDER"], self.jsonFilename)
-        f = open(self.jsonPath, "w+")
+    
+        f = open(self.segmentedJsonPath, "w+")
         f.write(json.dumps(toJson))
         f.close()
         

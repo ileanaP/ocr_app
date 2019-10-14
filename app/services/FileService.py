@@ -29,28 +29,25 @@ class FileService:
             
     def delete(self, filename):
         filename = secure_filename(filename)
-        filePath = self.getFilePath(filename)
+        segmentedJson = self.changeFileExt(filename, "json")
+        croppedJson = self.changeFileExt(filename, "cropped.json")
         
-        preprocessedFilePath = self.getFilePath(filename.replace(".", "_preprocessing."))
-        segmentedFilePath = self.getFilePath(filename.replace(".", "_segmented."))
+        filePath = self.getFilePath('upload', filename)
+        preprocessedPath = self.getFilePath('results', filename)
+        segmentedJsonPath = self.getFilePath('results', segmentedJson)
+        croppedJsonPath = self.getFilePath('results', croppedJson)
         
         try:
-            os.remove(filePath)
-            
-            if os.path.exists(preprocessedFilePath):
-                os.remove(preprocessedFilePath)
-            if os.path.exists(segmentedFilePath):
-                os.remove(segmentedFilePath)
+            self.tryRemoveFile(filePath)
+            self.tryRemoveFile(preprocessedPath)
+            self.tryRemoveFile(segmentedJsonPath)
+            self.tryRemoveFile(croppedJsonPath)
             
             self.cleanCroppedFolder()
-            open(os.path.join(app.config["RESULTS_FOLDER"], "cropped_filenames.json"), "w").close(); # delete file contents
             
             return '1007'
         except:
             return '1006'
-
-    def getFilePath(self, filename):
-        return os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
     def isFileExtentionAllowed(self, filename): #ar putea fi imbunatatit
             ext = filename.split('.')[1].lower()
@@ -69,11 +66,25 @@ class FileService:
         filename = secure_filename(file.filename)
         
         if self.isFileExtentionAllowed(filename):
-            filePath = self.getFilePath(filename)
+            filePath = self.getFilePath('upload', filename)
             file.save(filePath) #TO DO - sa adauge un 01 la finalul numelui fisierului daca numele exista deja
             return filename #file was uploaded succcesfully
         else:
             return '1004' #file extention not allowed
+
+    @staticmethod
+    def tryRemoveFile(filePath):
+        if os.path.exists(filePath):
+            os.remove(filePath)
+    
+    @staticmethod
+    def changeFileExt(filename, newExt):
+        filename = filename.split(".", 1)[0]
+        return ''.join([filename, ".", newExt])
+    
+    @staticmethod
+    def getFilePath(fType, filename):
+        return os.path.join(app.config[fType.upper() + '_FOLDER'], filename)
         
     @staticmethod
     def cleanCroppedFolder():
