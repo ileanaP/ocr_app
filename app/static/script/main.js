@@ -54,10 +54,7 @@ $(document).ready(function(){
         }
     });
     
-    $(".js-image").on("load", function(){
-        //$(".outsideWrapper").width($(this).width());
-        //$(".outsideWrapper").height($(this).height());
-        
+    $(".js-image").on("load", function(){        
         $(".insideWrapper").width($(this).width());
         $(".insideWrapper").height($(this).height());
     });
@@ -70,7 +67,9 @@ $(document).ready(function(){
         
         promiseUploadFileCall(formData).then(data => {
                 filename = data;
+                console.log("<3 <3 <3" + data + "<3 <3 <3");
                 showNotif('1003');
+
                 $(".js-image").attr("src", uploadsFolder + filename);
                 
                 setTimeout(() => {                   
@@ -123,9 +122,19 @@ $(document).ready(function(){
                     $(".js-file-label").text("Choose file");
                     
                     $(".js-postupload .js-image").attr("src", "");
-                    $(".js-cb-main").prop("checked", true);
                     $(".js-results-cropped").html("");
                     $(".js-btn-results").css("visibility", "hidden");
+                    
+                    $(".js-cb-main").removeAttr("disabled");
+                    $(".js-cb-main").removeAttr("readonly");
+                    $(".js-cb-main").prop("checked", true);
+                    
+                    $(".js-canvas").remove(); // TO DO - sa pun numele clasei cu "js.."
+                    $(".js-image").css("visibility", "visible");
+                    $(".insideWrapper").css("width", "100%");
+                    $(".insideWrapper").css("height", "100%");
+                    toggleModalDisplay();
+                    
                     restoreDefaultSegmentationTags();
                     showSegmentationTags();
                     
@@ -140,7 +149,7 @@ $(document).ready(function(){
         });
         
     $("body").on("click", ".js-btn-original", function(e){
-        $(".defaultCanvas").css("visibility", "hidden");
+        $(".js-canvas").css("visibility", "hidden");
         $(".js-image").attr("src", uploadsFolder + filename);
         $(".js-image").css("visibility", "visible");
     });
@@ -194,7 +203,7 @@ $(document).ready(function(){
                 
                 if($(".js-cb-cropped").prop("checked"))
                 toggleCropped();
-                disableModal();
+                toggleModalDisplay();
                 
                 data = JSON.parse(data);    // data[0] - filename of json containing segmentation data of image
                 croppedFilenames = data[1]; // filename of json containing cropped regions filenames
@@ -296,13 +305,18 @@ $(document).ready(function(){
     });
     
     $(".js-badges-list").on("click", function(){
-        $('.js-modal-segmentation').modal("show");
-    });    
+        console.log("#js-badges-list CLICK");
+        if($(this).attr("data-modalDisabled") == 0)
+        {
+            $('.js-modal-segmentation').modal("show");
+        }
+    });
 	
 });
 
 function toggleBadge(elem)
 {
+    console.log("#toggleBadge");
     var showElem = toggleBadgeClass(elem);
     
     if($(elem).text() == "cropped")
@@ -340,18 +354,38 @@ function toggleBadgeClass(elem)
     }
 }
 
-function disableModal()
+function toggleModalDisplay()
 {
-    $(".js-badges-list").prop("onclick", null).off("click");
-    $(".js-badge").on("click", function(){
-        toggleBadge(this);
-    });
+    console.log("#toggleModal");
+    
+    if($(".js-badges-list").attr("data-modalDisabled") == 0)
+    {
+        console.log("modal can be displayed; hide modal; 0 => 1");
+        
+        console.log("~~m dis 1:" + $(".js-badges-list").attr("data-modalDisabled"));
+        $(".js-badges-list").attr("data-modalDisabled", 1);
+        console.log("~~m dis 2:" + $(".js-badges-list").attr("data-modalDisabled"));
+        
+        $(".js-badge").on("click", function(){
+            toggleBadge(this);
+        });
+    }
+    else
+    {
+        console.log("modal cannot be displayed; display modal; 1 => 0");
+        
+        console.log("~~m dis 1:" + $(".js-badges-list").attr("data-modalDisabled"));
+        $(".js-badges-list").attr("data-modalDisabled", 0);
+        console.log("~~m dis 2:" + $(".js-badges-list").attr("data-modalDisabled"));
+        $(".js-badge").off("click");
+    }  
 }
 
 function newCanvas(name, width, height)
 {
     var canvas = $("<canvas />")
                     .addClass("defaultCanvas")
+                    .addClass("js-canvas")
                     .attr("id", "js-canvas-" + name)
                     .attr("width", width)
                     .attr("height", height);
@@ -432,6 +466,8 @@ function toggleCropped()
 {
     if($(".js-results-cropped img").length == 0)
     {
+        $(".js-postupload .js-options").css("pointer-events", "none");
+        
         $(".js-spinner-cropped").show();
         $.getJSON(resultsFolder + croppedFilenames+ '?v=' + v).done(function(data){ // I prevent cache-ing by adding the timestamp 
         // TO DO - sa iau static/results din app.config (daca se poate)
@@ -451,6 +487,8 @@ function toggleCropped()
                 $(".js-results-cropped").imagesLoaded(function(){
                     $(".js-spinner-cropped").hide();
                     $(".js-results-cropped img").css("display", "inline-block");
+                    
+                    $(".js-postupload .js-options").css("pointer-events", "auto");
                 });
             });
     }
@@ -467,6 +505,16 @@ function restoreDefaultSegmentationTags()
 
     $(".js-cb-lines").prop("checked", true);
     $(".js-cb-regions").prop("checked", true);
+}
+
+function restoreOperationCheckboxes()
+{
+    for(var i = 0; i < ppC.length; i++)
+    {
+        $(".js-cb-" + ppC[i]).removeAttr("disabled");
+        $(".js-cb-" + ppC[i]).removeAttr("readonly");
+        $(".js-cb-" + ppC[i]).prop("checked", true);
+    }
 }
 
 function areDefaultValues()
